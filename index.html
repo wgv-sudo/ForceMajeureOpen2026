@@ -359,8 +359,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 // ══════════════════════════════════════════════════════════════
 const ADMIN_PIN = '2026';
 const SLOT_TIMES = ['0:00–0:15', '0:20–0:35', '0:40–0:55'];
-const STORAGE_KEY = 'fm_open_2026_state';
-const FEED_KEY = 'fm_open_2026_feed';
+const STORAGE_KEY = 'fm_open_2026_state_v2';
+const FEED_KEY = 'fm_open_2026_feed_v2';
 
 const DEFAULT_PLAYERS = [
   {name:'Leo Hynninen', skill:3.0, active:true},
@@ -451,9 +451,13 @@ function loadState() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && parsed.players && parsed.pairs && parsed.groups) {
-        // Backward compat: infer structure from group keys
-        if (!parsed.structure) {
-          parsed.structure = parsed.groups.I ? '2groups' : '4groups';
+        // Force 2groups structure — 4groups is no longer supported
+        if (parsed.structure !== '2groups' || !parsed.groups.I || !parsed.groups.O) {
+          parsed.structure = '2groups';
+          parsed.pairs = buildPairs(parsed.players);
+          parsed.groups = assignGroups(parsed.pairs, parsed.players, '2groups');
+          parsed.scores = {};
+          parsed.teamNames = {};
         }
         return parsed;
       }
