@@ -1,10 +1,1365 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>index</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Force Majeure Open 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a; --s1:#111; --s2:#191919; --s3:#222;
+  --border:#2a2a2a; --border2:rgba(255,255,255,0.1);
+  --text:#f2f2f2; --muted:#666; --muted2:#888;
+  --in:#4f8ef7; --in-dim:rgba(79,142,247,0.1);
+  --out:#f0a500; --out-dim:rgba(240,165,0,0.1);
+  --win:#34d399; --win-dim:rgba(52,211,153,0.08);
+  --kno:#c084fc; --kno-dim:rgba(192,132,252,0.1);
+  --red:#f87171; --gold:#f0a500;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh}
+button{font-family:inherit}
+input,select{font-family:inherit}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;padding:40px 24px 32px;background:var(--s1);border-bottom:1px solid var(--border)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 60% -20%,rgba(79,142,247,0.08) 0%,transparent 70%),radial-gradient(ellipse 50% 40% at 10% 110%,rgba(240,165,0,0.06) 0%,transparent 60%);pointer-events:none}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative}
+.hero-eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.hero-title{font-family:'Anton',sans-serif;font-size:clamp(36px,7vw,72px);line-height:0.92;letter-spacing:-1px}
+.hero-title span{color:var(--in)}
+.hero-meta{margin-top:14px;display:flex;gap:20px;flex-wrap:wrap}
+.hero-chip{font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:5px}
+.hero-chip b{color:var(--text);font-weight:600}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:200;background:rgba(10,10,10,0.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow-x:auto;padding:0 20px}
+.tab{padding:14px 16px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--in)}
+.tab-admin{margin-left:auto;color:var(--muted);font-size:12px}
+.tab-admin.active{border-bottom-color:var(--gold);color:var(--gold)}
+
+/* PAGES */
+.page{display:none;padding:24px 20px 80px;max-width:1100px;margin:0 auto}
+.page.active{display:block}
+.page-title{font-family:'Anton',sans-serif;font-size:28px;letter-spacing:0.5px;margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+.section-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px}
+
+/* CARDS & BADGES */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-head{padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-title{font-family:'Anton',sans-serif;font-size:16px;letter-spacing:0.5px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+.b-in{background:var(--in-dim);color:var(--in)} .b-out{background:var(--out-dim);color:var(--out)}
+.b-kno{background:var(--kno-dim);color:var(--kno)} .b-win{background:var(--win-dim);color:var(--win)}
+
+/* STATS */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:12px 16px;min-width:90px}
+.stat-val{font-family:'Anton',sans-serif;font-size:28px;line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600}
+
+/* GRIDS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+
+/* STANDINGS TABLE */
+.stand-table{width:100%;border-collapse:collapse;font-size:13px}
+.stand-table th{text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
+.stand-table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.stand-table tr:last-child td{border-bottom:none}
+.stand-table tr.leader{background:rgba(52,211,153,0.04)}
+.s-rank{font-weight:700;color:var(--muted);width:24px}
+.s-rank.r1{color:var(--win)}
+.s-pts{font-weight:700}
+.tname{font-weight:700;font-size:13px;color:var(--text)}
+.tname.unnamed{color:var(--muted);font-style:italic;font-weight:400;font-size:12px}
+.tplayers{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* MATCH CARDS */
+.match-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .15s}
+.match-card:hover{border-color:var(--border2)}
+.match-card-head{padding:7px 12px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.court-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.time-tag{font-size:12px;color:var(--muted)}
+.match-body{padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.match-team-row{display:flex;align-items:center;gap:8px}
+.match-team-info{flex:1;min-width:0}
+.match-vs{text-align:center;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px}
+.score-in{width:40px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);text-align:center;font-family:'Anton',sans-serif;font-size:20px;transition:border-color .1s;cursor:pointer;flex-shrink:0}
+.score-in:focus{outline:none;border-color:var(--in)}
+.score-in.win{border-color:var(--win);color:var(--win);background:var(--win-dim)}
+.free-slot{background:var(--s1);border:1px dashed var(--border);border-radius:8px;padding:12px 14px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:8px}
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:20px}
+
+/* SLOT HEADERS */
+.slot-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.slot-title{font-family:'Anton',sans-serif;font-size:16px;letter-spacing:0.5px}
+.slot-time{font-size:12px;color:var(--muted);background:var(--s2);padding:2px 8px;border-radius:4px}
+.hour-banner{display:flex;align-items:center;gap:12px;margin:28px 0 18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.hour-big{font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px}
+.hour-desc{font-size:13px;color:var(--muted)}
+.divline{flex:1;border:none;border-top:1px solid var(--border)}
+
+/* BRACKET */
+.bracket-wrap{overflow-x:auto;padding-bottom:12px;margin-bottom:24px}
+.bracket{display:flex;align-items:stretch;min-width:560px}
+.b-round{display:flex;flex-direction:column;flex:1;padding:0 6px}
+.b-round-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.b-matches{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:10px}
+.b-match{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.b-match-head{padding:5px 10px;background:var(--s2);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)}
+.b-team{padding:10px 12px;border-bottom:1px solid var(--border);min-height:48px}
+.b-team:last-child{border-bottom:none}
+.b-conn{width:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.champ-box{text-align:center;padding:28px 20px;background:var(--s1);border:1px solid rgba(192,132,252,0.3);border-radius:12px;margin-top:20px}
+.champ-trophy{font-size:44px;margin-bottom:8px}
+.champ-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--kno);margin-bottom:8px}
+.champ-name{font-family:'Anton',sans-serif;font-size:34px}
+
+/* LIVE FEED */
+.feed-list{display:flex;flex-direction:column;gap:8px}
+.feed-item{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.feed-icon{font-size:18px;flex-shrink:0}
+.feed-text{flex:1;font-size:13px;line-height:1.5}
+.feed-text b{color:var(--text);font-weight:600}
+.feed-time{font-size:11px;color:var(--muted);flex-shrink:0}
+.feed-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px;border:1px dashed var(--border);border-radius:8px}
+
+/* TEAM NAMES PAGE */
+.name-entry-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+.name-entry-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.name-entry-players{font-size:12px;color:var(--muted2);margin-bottom:10px}
+.name-input-row{display:flex;gap:8px;align-items:center}
+.name-input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:14px;font-weight:600;transition:border-color .15s;min-width:0}
+.name-input:focus{outline:none;border-color:var(--in)}
+.name-input::placeholder{color:var(--muted);font-weight:400}
+.skill-pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--s3);color:var(--muted2);border:1px solid var(--border);flex-shrink:0}
+.locked-badge{font-size:10px;background:rgba(240,165,0,0.15);color:var(--gold);padding:2px 6px;border-radius:3px;font-weight:700;flex-shrink:0}
+
+/* BUTTONS */
+.btn{background:var(--in);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;transition:filter .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted2)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);background:var(--s2);filter:none}
+.btn-danger{background:var(--red);color:#fff}
+.btn-warn{background:var(--gold);color:#000}
+.btn-success{background:var(--win);color:#000}
+
+/* ADMIN */
+.admin-section{margin-bottom:28px}
+.admin-section-title{font-family:'Anton',sans-serif;font-size:18px;letter-spacing:0.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.player-admin-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;flex-wrap:wrap}
+.player-admin-name{flex:1;font-weight:600;font-size:13px;min-width:140px}
+.player-admin-skill{width:64px;background:var(--s2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 8px;font-size:13px;text-align:center}
+.player-admin-skill:focus{outline:none;border-color:var(--gold)}
+.player-admin-status{font-size:11px;padding:4px 10px;border-radius:4px;font-weight:600;cursor:pointer;border:none}
+.status-yes{background:rgba(52,211,153,0.15);color:var(--win)}
+.status-no{background:rgba(248,113,113,0.15);color:var(--red)}
+.admin-pair-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;flex-wrap:wrap}
+.admin-pair-select{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:13px;min-width:120px}
+.admin-pair-select:focus{outline:none;border-color:var(--gold)}
+.admin-pair-group{width:90px;background:var(--s2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:13px}
+.admin-pair-group:focus{outline:none;border-color:var(--gold)}
+
+/* PIN OVERLAY */
+.pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center}
+.pin-overlay.show{display:flex}
+.pin-box{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:32px;width:320px;text-align:center}
+.pin-title{font-family:'Anton',sans-serif;font-size:22px;margin-bottom:6px}
+.pin-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.pin-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:12px;font-family:'Anton',sans-serif;font-size:28px;text-align:center;letter-spacing:6px;margin-bottom:12px}
+.pin-input:focus{outline:none;border-color:var(--gold)}
+.pin-error{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+
+/* STRUCTURE TOGGLE */
+.structure-toggle{display:flex;gap:8px;flex-wrap:wrap}
+.structure-option{flex:1;min-width:220px;background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .15s;text-align:left}
+.structure-option:hover{border-color:var(--border2);background:var(--s2)}
+.structure-option.active{border-color:var(--gold);background:rgba(240,165,0,0.05)}
+.structure-option-title{font-family:'Anton',sans-serif;font-size:16px;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.structure-option.active .structure-option-title{color:var(--gold)}
+.structure-option-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.structure-check{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--s2)}
+.structure-option.active .structure-check{border-color:var(--gold);background:var(--gold)}
+.structure-option.active .structure-check::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--bg)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--win);color:#000;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13px;opacity:0;transform:translateY(8px);transition:all .2s;z-index:400;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* UTILS */
+.note{font-size:12px;color:var(--muted);padding:10px 12px;background:var(--s2);border-radius:6px;border-left:3px solid var(--border2);margin-bottom:16px}
+hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.tbd{color:var(--muted);font-style:italic;font-weight:400;font-size:12px}
+</style>
 </head>
 <body>
-    <h1>Welcome to the Force Majeure Open 2026</h1>
-    <p>This is a placeholder page for the event.</p>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Padel Tournament</div>
+    <div class="hero-title">Force Majeure<br><span>Open 2026</span></div>
+    <div class="hero-meta">
+      <div class="hero-chip">🏢 <b>3</b> Indoor</div>
+      <div class="hero-chip">🌤️ <b>2</b> Outdoor</div>
+      <div class="hero-chip">⏱️ <b>2h</b> Total</div>
+      <div class="hero-chip">🎾 <b id="hero-pairs">14</b> Pairs</div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <button class="tab active" data-page="live">🔴 Live</button>
+  <button class="tab" data-page="groups">Groups</button>
+  <button class="tab" data-page="schedule">Schedule</button>
+  <button class="tab" data-page="bracket">Bracket</button>
+  <button class="tab" data-page="names">Team Names</button>
+  <button class="tab tab-admin" data-page="admin">⚙ Admin</button>
+</nav>
+
+<div id="page-live" class="page active">
+  <div class="page-title">Live Feed</div>
+  <div class="page-sub">Real-time tournament updates</div>
+  <div class="stats-row" id="live-stats"></div>
+  <div class="section-label">Recent Activity</div>
+  <div id="feed-list" class="feed-list"></div>
+</div>
+
+<div id="page-groups" class="page">
+  <div class="page-title">Groups &amp; Standings</div>
+  <div class="page-sub">Top pair from each group advances to the semi-finals</div>
+  <div class="two-col" id="groups-layout"></div>
+</div>
+
+<div id="page-schedule" class="page">
+  <div class="page-title">Match Schedule</div>
+  <div class="page-sub">Enter scores below — standings and bracket update instantly</div>
+  <div id="schedule-content"></div>
+</div>
+
+<div id="page-bracket" class="page">
+  <div class="page-title">Bracket</div>
+  <div class="page-sub">Semi-finals, Final &amp; 3rd Place Match</div>
+  <div class="bracket-wrap">
+    <div class="bracket">
+      <div class="b-round">
+        <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">60 min mark</span></div>
+        <div class="b-matches">
+          <div class="b-match">
+            <div class="b-match-head" style="color:var(--kno)">SF1 · Court 1 · 1:00–1:15</div>
+            <div class="b-team" id="sf1-t1"><div class="tbd" id="sf1-t1-label">Winner Group A</div></div>
+            <div class="b-team" id="sf1-t2"><div class="tbd" id="sf1-t2-label">Winner Group C</div></div>
+          </div>
+          <div class="b-match">
+            <div class="b-match-head" style="color:var(--kno)">SF2 · Court 2 · 1:00–1:15</div>
+            <div class="b-team" id="sf2-t1"><div class="tbd" id="sf2-t1-label">Winner Group B</div></div>
+            <div class="b-team" id="sf2-t2"><div class="tbd" id="sf2-t2-label">Winner Group D</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="b-conn">
+        <svg width="20" height="140" viewBox="0 0 20 140" fill="none">
+          <path d="M0,35 H10 V105 H0" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+          <line x1="10" y1="70" x2="20" y2="70" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="b-round">
+        <div class="b-round-title">Final<br><span style="font-size:9px;color:var(--muted)">80 min mark</span></div>
+        <div class="b-matches">
+          <div class="b-match" style="border-color:rgba(192,132,252,0.25)">
+            <div class="b-match-head" style="color:var(--kno)">🏆 FINAL · Court 1 · 1:20–1:35</div>
+            <div class="b-team"><div class="tbd">Winner SF1</div></div>
+            <div class="b-team"><div class="tbd">Winner SF2</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr class="divider">
+  <div class="section-label">3rd Place</div>
+  <div style="max-width:300px">
+    <div class="b-match">
+      <div class="b-match-head">3rd Place · Court 2 · 1:20–1:35</div>
+      <div class="b-team"><div class="tbd">Loser SF1</div></div>
+      <div class="b-team"><div class="tbd">Loser SF2</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-names" class="page">
+  <div class="page-title">Team Names</div>
+  <div class="page-sub">Each pair enters their team name here — it'll appear across the whole tournament</div>
+  <div class="note">📝 Type your team name in the field and click Save.</div>
+  <div id="names-list"></div>
+</div>
+
+<div id="page-admin" class="page">
+  <div class="page-title" style="color:var(--gold)">⚙ Admin Panel</div>
+  <div class="page-sub">Manage structure, participants, ratings, and pair assignments</div>
+
+  <div class="admin-section">
+    <div class="admin-section-title">🏗️ Tournament Structure</div>
+    <div class="note">Switch between 4 small groups (recommended default) or 2 big groups. Changing structure rebuilds groups and clears all scores and team names.</div>
+    <div id="structure-toggle" class="structure-toggle"></div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="admin-section">
+    <div class="admin-section-title">
+      👥 Participants &amp; Skill Ratings
+      <button class="btn btn-sm btn-ghost" id="btn-add-player">+ Add Player</button>
+    </div>
+    <div class="note">Click the status button to toggle participation. Edit skill ratings inline.</div>
+    <div id="admin-players"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-warn" id="btn-rebuild-pairs">⚡ Rebuild Pairs (auto-balance)</button>
+      <button class="btn btn-sm btn-ghost" id="btn-save-players">💾 Save Changes</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="admin-section">
+    <div class="admin-section-title">🎾 Pair Assignments &amp; Groups</div>
+    <div class="note">Reassign players or move pairs between groups. A/B = Inside, C/D = Outside. Leo + Ville pair is locked.</div>
+    <div id="admin-pairs"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-sm btn-success" id="btn-save-pairs">💾 Save Pair Assignments</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="admin-section">
+    <div class="admin-section-title">🔴 Reset</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-danger" id="btn-reset-scores">Reset All Scores</button>
+      <button class="btn btn-sm btn-danger" id="btn-reset-names">Reset Team Names</button>
+      <button class="btn btn-sm btn-danger" id="btn-full-reset">Full Reset</button>
+    </div>
+  </div>
+</div>
+
+<div id="pin-overlay" class="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-title">Admin Access</div>
+    <div class="pin-sub">Enter the 4-digit PIN</div>
+    <input type="password" class="pin-input" id="pin-input" maxlength="4" placeholder="••••" inputmode="numeric">
+    <div class="pin-error" id="pin-error"></div>
+    <button class="btn btn-ghost btn-sm" id="btn-close-pin">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════
+const ADMIN_PIN = '2026';
+const SLOT_TIMES = ['0:00–0:15', '0:20–0:35', '0:40–0:55'];
+const STORAGE_KEY = 'fm_open_2026_state';
+const FEED_KEY = 'fm_open_2026_feed';
+
+const DEFAULT_PLAYERS = [
+  {name:'Leo Hynninen', skill:3.0, active:true},
+  {name:'Aleksi Uusitalo', skill:3.0, active:true},
+  {name:'Jimi von Schrowe', skill:3.0, active:true},
+  {name:'Iisakki Nisula', skill:2.5, active:true},
+  {name:'Minna Miettinen', skill:2.5, active:true},
+  {name:'Anton Helanterä', skill:2.0, active:true},
+  {name:'Eeva Joutsen', skill:2.0, active:true},
+  {name:'Jussi Mäkikangas', skill:2.0, active:true},
+  {name:'Maiju Mäkinen', skill:2.0, active:true},
+  {name:'Markus Rahnu', skill:2.0, active:true},
+  {name:'Olivia Sørensen', skill:2.0, active:true},
+  {name:'Anna-Maria Huldén', skill:2.0, active:true},
+  {name:'Jarno Tanhuanpää', skill:2.0, active:true},
+  {name:'Karlo Siirala', skill:2.0, active:true},
+  {name:'Benjamin Bade', skill:2.0, active:true},
+  {name:'Valentin Golovanov', skill:2.0, active:true},
+  {name:'Wille Järvelä', skill:2.0, active:true},
+  {name:'Carola Lindholm', skill:1.8, active:true},
+  {name:'Ville Wallgren', skill:1.0, active:true},
+  {name:'Helmi Puustinen', skill:1.0, active:true},
+  {name:'Kerttu Mettälä', skill:1.0, active:true},
+  {name:'Lauri Martin', skill:1.0, active:true},
+  {name:'Maisa Tuomela', skill:1.0, active:true},
+  {name:'Annamari Friskopf', skill:1.0, active:true},
+  {name:'Sini Bono', skill:1.0, active:true},
+  {name:'Freja Väyrynen', skill:1.0, active:true},
+  {name:'Fiona Kiljala', skill:0.5, active:true},
+  {name:'Niina Kylmälä', skill:0.5, active:true},
+  {name:'Aino Järnroos', skill:2.0, active:false},
+  {name:'Julia Liimatainen', skill:1.5, active:false},
+];
+
+// Schedule templates by group size
+// r = round/slot, h/a = indices of pairs in the group
+const MATCH_TEMPLATES = {
+  // 4 pairs, 3 slots, 1 court per slot: each pair plays 1-2 matches
+  4: [{r:1,h:0,a:1}, {r:2,h:2,a:3}, {r:3,h:0,a:2}],
+  // 3 pairs, 3 slots, 1 court per slot: full round-robin, everyone plays 2
+  3: [{r:1,h:0,a:1}, {r:2,h:0,a:2}, {r:3,h:1,a:2}],
+  // 8 pairs, 3 slots, 3 courts per slot = 9 matches
+  // Each pair plays 2-3 matches; opponents are varied
+  8: [
+    {r:1,h:0,a:7}, {r:1,h:1,a:6}, {r:1,h:2,a:5},
+    {r:2,h:3,a:4}, {r:2,h:0,a:5}, {r:2,h:1,a:7},
+    {r:3,h:2,a:6}, {r:3,h:3,a:5}, {r:3,h:0,a:4},
+  ],
+  // 6 pairs, 3 slots, 2 courts per slot = 6 matches
+  // Each pair plays 2 matches; opponents are varied
+  6: [
+    {r:1,h:0,a:5}, {r:1,h:1,a:4},
+    {r:2,h:2,a:3}, {r:2,h:0,a:4},
+    {r:3,h:1,a:5}, {r:3,h:2,a:3}, // slight repeat, alternative below
+  ],
+};
+// Fix 6-pair template: avoid repeats
+MATCH_TEMPLATES[6] = [
+  {r:1,h:0,a:5}, {r:1,h:1,a:4},
+  {r:2,h:2,a:3}, {r:2,h:0,a:4},
+  {r:3,h:1,a:3}, {r:3,h:2,a:5},
+];
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let STATE = null;
+let feedLog = [];
+let adminUnlocked = false;
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.players && parsed.pairs && parsed.groups) {
+        // Backward compat: infer structure from group keys
+        if (!parsed.structure) {
+          parsed.structure = parsed.groups.I ? '2groups' : '4groups';
+        }
+        return parsed;
+      }
+    }
+  } catch(e) { console.warn('Failed to load state:', e); }
+  return buildDefaultState();
+}
+
+function loadFeed() {
+  try {
+    const saved = localStorage.getItem(FEED_KEY);
+    if (saved) return JSON.parse(saved) || [];
+  } catch(e) {}
+  return [];
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    localStorage.setItem(FEED_KEY, JSON.stringify(feedLog));
+  } catch(e) { console.error('Failed to save:', e); }
+}
+
+function buildDefaultState() {
+  const players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
+  const pairs = buildPairs(players);
+  const structure = '4groups'; // or '2groups'
+  const groups = assignGroups(pairs, players, structure);
+  return { players, pairs, groups, structure, scores: {}, teamNames: {} };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PAIR & GROUP BUILDING
+// ══════════════════════════════════════════════════════════════
+function buildPairs(players) {
+  const active = players.filter(p => p.active);
+  const sorted = [...active].sort((a,b) => b.skill - a.skill);
+  const leo = active.find(p => p.name === 'Leo Hynninen');
+  const ville = active.find(p => p.name === 'Ville Wallgren');
+  const hasFixed = leo && ville;
+  const pool = sorted.filter(p => p.name !== 'Leo Hynninen' && p.name !== 'Ville Wallgren');
+  const pairs = [];
+  let nextId = 0;
+  if (hasFixed) {
+    pairs.push({id: nextId++, p1: 'Leo Hynninen', p2: 'Ville Wallgren', locked: true, group: 'A'});
+  }
+  const n = pool.length;
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    pairs.push({id: nextId++, p1: pool[i].name, p2: pool[n-1-i].name, locked: false, group: null});
+  }
+  if (n % 2 === 1) {
+    pairs.push({id: nextId++, p1: pool[Math.floor(n/2)].name, p2: '(solo)', locked: false, group: null});
+  }
+  return pairs;
+}
+
+function assignGroups(pairs, players, structure = '4groups') {
+  const getSkill = (name) => {
+    const p = players.find(pl => pl.name === name);
+    return p ? p.skill : 1.5;
+  };
+  const pairAvgFn = (pair) => (getSkill(pair.p1) + getSkill(pair.p2)) / 2;
+  const locked = pairs.find(p => p.locked);
+  const rest = pairs.filter(p => !p.locked).sort((a,b) => pairAvgFn(b) - pairAvgFn(a));
+
+  if (structure === '2groups') {
+    // One big Inside group (8 pairs) + one big Outside group (6 pairs)
+    // Locked pair goes to Inside (I)
+    const insideCount = locked ? 7 : 8;
+    const insidePool = rest.slice(0, insideCount);
+    const outsidePool = rest.slice(insideCount);
+    const I = [], O = [];
+    if (locked) { locked.group = 'I'; I.push(locked.id); }
+    insidePool.forEach(p => { p.group = 'I'; I.push(p.id); });
+    outsidePool.forEach(p => { p.group = 'O'; O.push(p.id); });
+    return { I, O };
+  }
+
+  // Default: 4 groups (A/B inside, C/D outside)
+  const insideCount = locked ? 7 : 8;
+  const insidePool = rest.slice(0, insideCount);
+  const outsidePool = rest.slice(insideCount);
+  const A = [], B = [], C = [], D = [];
+  if (locked) { locked.group = 'A'; A.push(locked.id); }
+  insidePool.forEach((p, i) => {
+    const target = locked
+      ? (i % 2 === 0 ? 'B' : 'A')
+      : (i % 2 === 0 ? 'A' : 'B');
+    p.group = target;
+    (target === 'A' ? A : B).push(p.id);
+  });
+  outsidePool.forEach((p, i) => {
+    const target = i % 2 === 0 ? 'C' : 'D';
+    p.group = target;
+    (target === 'C' ? C : D).push(p.id);
+  });
+  return { A, B, C, D };
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function getPair(id) { return STATE.pairs.find(p => p.id === id); }
+function getPlayer(name) { return STATE.players.find(p => p.name === name); }
+function getPairsForGroup(g) { 
+  return (STATE.groups[g] || []).map(id => getPair(id)).filter(Boolean); 
+}
+function pairAvg(pair) {
+  const s1 = getPlayer(pair.p1)?.skill ?? 1.5;
+  const s2 = pair.p2 === '(solo)' ? s1 : (getPlayer(pair.p2)?.skill ?? 1.5);
+  return ((s1 + s2) / 2).toFixed(1);
+}
+function teamName(pairId) { return STATE.teamNames[pairId] || null; }
+function teamDisplay(pairId) {
+  const pair = getPair(pairId);
+  if (!pair) return {name:'Unknown', players:'', hasName:false};
+  const players = pair.p2 === '(solo)' ? pair.p1 : `${pair.p1} & ${pair.p2}`;
+  const n = teamName(pairId);
+  return {name: n || 'Unnamed', players, hasName: !!n};
+}
+function getScheduleForGroup(g) {
+  const size = getPairsForGroup(g).length;
+  const tmpl = MATCH_TEMPLATES[size];
+  if (!tmpl) return [];
+  return tmpl.map(m => ({...m}));
+}
+function matchKey(g, idx) { return `${g}_${idx}`; }
+function getScore(g, idx) {
+  const k = matchKey(g, idx);
+  return STATE.scores[k] || {h:'', a:''};
+}
+function groupKeys() {
+  return Object.keys(STATE.groups);
+}
+function isInsideGroup(g) {
+  return STATE.structure === '2groups' ? g === 'I' : ['A','B'].includes(g);
+}
+function confColor(g) { return isInsideGroup(g) ? 'var(--in)' : 'var(--out)'; }
+function confLabel(g) { return isInsideGroup(g) ? 'Inside' : 'Outside'; }
+function confBadgeCls(g) { return isInsideGroup(g) ? 'b-in' : 'b-out'; }
+function groupDisplayName(g) {
+  if (STATE.structure === '2groups') {
+    return g === 'I' ? 'Inside Group' : 'Outside Group';
+  }
+  return `Group ${g}`;
+}
+function courtFor(g, slot, matchIdxInSlot = 0) {
+  if (STATE.structure === '2groups') {
+    if (g === 'I') return `Court ${1 + matchIdxInSlot}`; // courts 1,2,3
+    if (g === 'O') return `Court ${4 + matchIdxInSlot}`; // courts 4,5
+  }
+  return {A:'Court 1', B:'Court 2', C:'Court 4', D:'Court 5'}[g] || '—';
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ══════════════════════════════════════════════════════════════
+// STANDINGS
+// ══════════════════════════════════════════════════════════════
+function computeStandings(g) {
+  const pairs = getPairsForGroup(g);
+  const sch = getScheduleForGroup(g);
+  const stats = pairs.map(p => ({pair:p, w:0, l:0, pts:0, gf:0, ga:0}));
+  sch.forEach((m, idx) => {
+    const sv = getScore(g, idx);
+    if (sv.h === '' || sv.a === '') return;
+    const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+    if (isNaN(h) || isNaN(a)) return;
+    if (m.h >= stats.length || m.a >= stats.length) return;
+    stats[m.h].gf += h; stats[m.h].ga += a;
+    stats[m.a].gf += a; stats[m.a].ga += h;
+    if (h > a) { stats[m.h].w++; stats[m.h].pts+=2; stats[m.a].l++; stats[m.a].pts+=1; }
+    else if (a > h) { stats[m.a].w++; stats[m.a].pts+=2; stats[m.h].l++; stats[m.h].pts+=1; }
+    else { stats[m.h].pts++; stats[m.a].pts++; }
+  });
+  return stats.sort((a,b) => b.pts-a.pts || b.w-a.w || (b.gf-b.ga)-(a.gf-a.ga));
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEED
+// ══════════════════════════════════════════════════════════════
+function addFeed(icon, msg) {
+  const now = new Date();
+  const time = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  feedLog.push({icon, msg, time, ts: Date.now()});
+  if (feedLog.length > 50) feedLog = feedLog.slice(-50);
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER: LIVE
+// ══════════════════════════════════════════════════════════════
+function renderLive() {
+  const totalMatches = Object.keys(STATE.scores).filter(k => {
+    const sv = STATE.scores[k];
+    return sv.h !== '' && sv.a !== '' && !isNaN(parseInt(sv.h)) && !isNaN(parseInt(sv.a));
+  }).length;
+  const totalExpected = groupKeys().reduce((sum, g) => sum + getScheduleForGroup(g).length, 0);
+  const activePlayers = STATE.players.filter(p => p.active).length;
+
+  document.getElementById('live-stats').innerHTML = `
+    <div class="stat"><div class="stat-val" style="color:var(--in)">${activePlayers}</div><div class="stat-lbl">Players</div></div>
+    <div class="stat"><div class="stat-val">${STATE.pairs.length}</div><div class="stat-lbl">Pairs</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--win)">${totalMatches}</div><div class="stat-lbl">Played</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--out)">${Math.max(0, totalExpected-totalMatches)}</div><div class="stat-lbl">Remaining</div></div>
+  `;
+  document.getElementById('hero-pairs').textContent = STATE.pairs.length;
+
+  const el = document.getElementById('feed-list');
+  if (feedLog.length === 0) {
+    el.innerHTML = '<div class="feed-empty">No scores yet — the tournament hasn\'t started! 🎾</div>';
+    return;
+  }
+  el.innerHTML = [...feedLog].reverse().slice(0, 20).map(item => `
+    <div class="feed-item">
+      <div class="feed-icon">${item.icon}</div>
+      <div class="feed-text">${item.msg}</div>
+      <div class="feed-time">${item.time}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER: GROUPS
+// ══════════════════════════════════════════════════════════════
+function renderGroups() {
+  const el = document.getElementById('groups-layout');
+  let html = '';
+  const advanceCount = STATE.structure === '2groups' ? 2 : 1;
+  groupKeys().forEach(g => {
+    const st = computeStandings(g);
+    const sch = getScheduleForGroup(g);
+    const playedCount = sch.filter((_, i) => {
+      const sv = getScore(g, i);
+      return sv.h !== '' && sv.a !== '';
+    }).length;
+
+    html += `<div>
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="card-title">${groupDisplayName(g)}</div>
+            <span class="badge ${confBadgeCls(g)}">${confLabel(g)}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">${playedCount}/${sch.length} played</div>
+        </div>
+        <table class="stand-table">
+          <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Pts</th></tr></thead>
+          <tbody>`;
+    st.forEach((s, i) => {
+      const td = teamDisplay(s.pair.id);
+      const advances = i < advanceCount;
+      html += `<tr class="${advances?'leader':''}">
+        <td class="s-rank ${advances?'r1':''}">${advances?'▶':i+1}</td>
+        <td>
+          <div class="tname ${td.hasName?'':'unnamed'}">${escapeHtml(td.name)}</div>
+          <div class="tplayers">${escapeHtml(td.players)}</div>
+        </td>
+        <td>${s.w}</td><td>${s.l}</td>
+        <td class="s-pts">${s.pts}</td>
+      </tr>`;
+    });
+    if (st.length === 0) {
+      html += `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No teams in this group</td></tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER: SCHEDULE
+// ══════════════════════════════════════════════════════════════
+function renderSchedule() {
+  let html = `<div class="hour-banner"><div class="hour-big" style="color:var(--in)">HOUR 1</div><div class="hour-desc">Group Stage · 3 × 15-min slots</div><hr class="divline"></div>`;
+
+  for (let slot = 1; slot <= 3; slot++) {
+    html += `<div class="slot-head"><div class="slot-title">Slot ${slot}</div><div class="slot-time">${SLOT_TIMES[slot-1]}</div></div>
+    <div class="matches-grid">`;
+
+    // Track total courts used this slot to detect free indoor court in 4groups mode
+    let indoorMatchesThisSlot = 0;
+
+    groupKeys().forEach(g => {
+      const sch = getScheduleForGroup(g);
+      const matchesThisSlot = sch.filter(x => x.r === slot);
+      if (matchesThisSlot.length === 0) return;
+      const pairs = getPairsForGroup(g);
+      if (isInsideGroup(g)) indoorMatchesThisSlot += matchesThisSlot.length;
+
+      matchesThisSlot.forEach((m, matchIdxInSlot) => {
+        if (!pairs[m.h] || !pairs[m.a]) return;
+        const home = pairs[m.h], away = pairs[m.a];
+        const idx = sch.indexOf(m);
+        const key = matchKey(g, idx);
+        const sv = getScore(g, idx);
+        const tdH = teamDisplay(home.id), tdA = teamDisplay(away.id);
+        const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+        const hWin = !isNaN(h) && !isNaN(a) && h > a;
+        const aWin = !isNaN(h) && !isNaN(a) && a > h;
+        const court = courtFor(g, slot, matchIdxInSlot);
+        const groupTag = STATE.structure === '2groups' ? confLabel(g) : `Group ${g}`;
+
+        html += `<div class="match-card">
+          <div class="match-card-head">
+            <span class="court-tag" style="color:${confColor(g)}">${court} · ${groupTag}</span>
+            <span class="time-tag">${SLOT_TIMES[slot-1]}</span>
+          </div>
+          <div class="match-body">
+            <div class="match-team-row">
+              <div class="match-team-info">
+                <div class="tname ${tdH.hasName?'':'unnamed'}">${escapeHtml(tdH.name)}</div>
+                <div class="tplayers">${escapeHtml(tdH.players)}</div>
+              </div>
+              <input type="number" min="0" max="99" class="score-in ${hWin?'win':''}" 
+                data-score="1" data-group="${g}" data-idx="${idx}" data-side="h" 
+                data-home="${home.id}" data-away="${away.id}"
+                value="${escapeHtml(sv.h)}" placeholder="—">
+            </div>
+            <div class="match-vs">VS</div>
+            <div class="match-team-row">
+              <div class="match-team-info">
+                <div class="tname ${tdA.hasName?'':'unnamed'}">${escapeHtml(tdA.name)}</div>
+                <div class="tplayers">${escapeHtml(tdA.players)}</div>
+              </div>
+              <input type="number" min="0" max="99" class="score-in ${aWin?'win':''}" 
+                data-score="1" data-group="${g}" data-idx="${idx}" data-side="a"
+                data-home="${home.id}" data-away="${away.id}"
+                value="${escapeHtml(sv.a)}" placeholder="—">
+            </div>
+          </div>
+        </div>`;
+      });
+    });
+
+    // Show free court notice if indoor courts aren't fully used (4groups mode)
+    if (STATE.structure === '4groups' && indoorMatchesThisSlot < 3 && slot <= 2) {
+      html += `<div class="free-slot">🏢 <span><b>Court 3</b> — Available for warm-up</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Knockout section — labels depend on structure
+  const sf1Home = STATE.structure === '2groups' ? 'Inside 1st' : 'Winner Group A';
+  const sf1Away = STATE.structure === '2groups' ? 'Outside 2nd' : 'Winner Group C';
+  const sf2Home = STATE.structure === '2groups' ? 'Outside 1st' : 'Winner Group B';
+  const sf2Away = STATE.structure === '2groups' ? 'Inside 2nd' : 'Winner Group D';
+
+  html += `<div class="hour-banner"><div class="hour-big" style="color:var(--kno)">HOUR 2</div><div class="hour-desc">Knockouts · SF → Final + 3rd Place</div><hr class="divline"></div>
+  <div class="matches-grid">
+    <div class="match-card"><div class="match-card-head"><span class="court-tag" style="color:var(--kno)">Court 1 · SF1</span><span class="time-tag">1:00–1:15</span></div>
+    <div class="match-body">
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf1-h">${sf1Home}</div></div></div>
+      <div class="match-vs">VS</div>
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf1-a">${sf1Away}</div></div></div>
+    </div></div>
+    <div class="match-card"><div class="match-card-head"><span class="court-tag" style="color:var(--kno)">Court 2 · SF2</span><span class="time-tag">1:00–1:15</span></div>
+    <div class="match-body">
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf2-h">${sf2Home}</div></div></div>
+      <div class="match-vs">VS</div>
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf2-a">${sf2Away}</div></div></div>
+    </div></div>
+    <div class="match-card" style="border-color:rgba(192,132,252,0.25)"><div class="match-card-head"><span class="court-tag" style="color:var(--kno)">Court 1 · 🏆 FINAL</span><span class="time-tag">1:20–1:35</span></div>
+    <div class="match-body">
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Winner SF1</div></div></div>
+      <div class="match-vs">VS</div>
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Winner SF2</div></div></div>
+    </div></div>
+    <div class="match-card"><div class="match-card-head"><span class="court-tag">Court 2 · 3rd Place</span><span class="time-tag">1:20–1:35</span></div>
+    <div class="match-body">
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Loser SF1</div></div></div>
+      <div class="match-vs">VS</div>
+      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Loser SF2</div></div></div>
+    </div></div>
+  </div>`;
+
+  document.getElementById('schedule-content').innerHTML = html;
+  syncBracket();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCORE HANDLER (via event delegation)
+// ══════════════════════════════════════════════════════════════
+function handleScoreInput(e) {
+  const inp = e.target;
+  if (!inp.matches('[data-score="1"]')) return;
+  const g = inp.dataset.group;
+  const idx = parseInt(inp.dataset.idx, 10);
+  const side = inp.dataset.side;
+  const homeId = parseInt(inp.dataset.home, 10);
+  const awayId = parseInt(inp.dataset.away, 10);
+  const val = inp.value;
+  const key = matchKey(g, idx);
+  if (!STATE.scores[key]) STATE.scores[key] = {h:'', a:''};
+  STATE.scores[key][side] = val;
+
+  // Update win styling on both inputs for this match
+  const body = inp.closest('.match-body');
+  if (body) {
+    const inputs = body.querySelectorAll('.score-in');
+    if (inputs.length === 2) {
+      const hVal = inputs[0].value, aVal = inputs[1].value;
+      const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
+      inputs[0].classList.toggle('win', !isNaN(h) && !isNaN(a) && h > a);
+      inputs[1].classList.toggle('win', !isNaN(h) && !isNaN(a) && a > h);
+    }
+  }
+
+  // Log completed match to feed
+  const sv = STATE.scores[key];
+  if (sv.h !== '' && sv.a !== '') {
+    const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+    if (!isNaN(h) && !isNaN(a)) {
+      const tH = teamDisplay(homeId);
+      const tA = teamDisplay(awayId);
+      const nameH = tH.hasName ? tH.name : tH.players;
+      const nameA = tA.hasName ? tA.name : tA.players;
+      // Dedupe: only log if different from last entry
+      const last = feedLog[feedLog.length - 1];
+      const newMsg = `<b>${escapeHtml(nameH)}</b> ${h} – ${a} <b>${escapeHtml(nameA)}</b> · Group ${g}`;
+      if (!last || last.msg !== newMsg) {
+        addFeed('🎾', newMsg);
+      }
+    }
+  }
+
+  saveState();
+  syncBracket();
+}
+
+// ══════════════════════════════════════════════════════════════
+// BRACKET SYNC
+// ══════════════════════════════════════════════════════════════
+function updateBracketDefaultLabels() {
+  const labels = STATE.structure === '2groups'
+    ? {sf1t1:'Inside 1st', sf1t2:'Outside 2nd', sf2t1:'Outside 1st', sf2t2:'Inside 2nd'}
+    : {sf1t1:'Winner Group A', sf1t2:'Winner Group C', sf2t1:'Winner Group B', sf2t2:'Winner Group D'};
+  // Only reset labels that are still in TBD state (the parent .b-team contains a .tbd child)
+  const sets = [['sf1-t1-label','sf1t1'],['sf1-t2-label','sf1t2'],['sf2-t1-label','sf2t1'],['sf2-t2-label','sf2t2']];
+  sets.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('tbd')) el.textContent = labels[key];
+  });
+}
+
+function syncBracket() {
+  // First reset all bracket slots to TBD (removes stale data when structure changes)
+  ['sf1-t1','sf1-t2','sf2-t1','sf2-t2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // If element contains only a .tbd child, leave it; otherwise restore TBD
+    const inner = el.querySelector('.tname');
+    if (inner) {
+      // Has a real team — reset to tbd state
+      el.innerHTML = `<div class="tbd" id="${id}-label"></div>`;
+    }
+  });
+  updateBracketDefaultLabels();
+
+  // Also reset schedule knockout labels to unnamed
+  ['sched-sf1-h','sched-sf1-a','sched-sf2-h','sched-sf2-a'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add('unnamed');
+      el.style.color = '';
+    }
+  });
+
+  // Collect advancing teams per structure
+  const setSlot = (bracketId, schedId, pair, confCol) => {
+    if (!pair) return;
+    const td = teamDisplay(pair.id);
+    const displayName = td.hasName ? td.name : td.players;
+    const playersLine = td.hasName ? `<div class="tplayers">${escapeHtml(td.players)}</div>` : '';
+    const bel = document.getElementById(bracketId);
+    if (bel) bel.innerHTML = `<div class="tname">${escapeHtml(displayName)}</div>${playersLine}`;
+    const sel = document.getElementById(schedId);
+    if (sel) {
+      sel.textContent = displayName;
+      sel.classList.remove('unnamed');
+      sel.style.color = confCol;
+    }
+  };
+
+  if (STATE.structure === '2groups') {
+    const stI = computeStandings('I');
+    const stO = computeStandings('O');
+    const anyGamesI = stI.some(s => s.pts > 0);
+    const anyGamesO = stO.some(s => s.pts > 0);
+    if (anyGamesI) {
+      setSlot('sf1-t1', 'sched-sf1-h', stI[0]?.pair, 'var(--in)');
+      if (stI[1]) setSlot('sf2-t2', 'sched-sf2-a', stI[1]?.pair, 'var(--in)');
+    }
+    if (anyGamesO) {
+      setSlot('sf2-t1', 'sched-sf2-h', stO[0]?.pair, 'var(--out)');
+      if (stO[1]) setSlot('sf1-t2', 'sched-sf1-a', stO[1]?.pair, 'var(--out)');
+    }
+  } else {
+    ['A','B','C','D'].forEach(g => {
+      const st = computeStandings(g);
+      if (st.length === 0 || st[0].pts === 0) return;
+      const leader = st[0].pair;
+      const bracketId = g==='A'?'sf1-t1' : g==='C'?'sf1-t2' : g==='B'?'sf2-t1':'sf2-t2';
+      const schedId = g==='A'?'sched-sf1-h' : g==='C'?'sched-sf1-a' : g==='B'?'sched-sf2-h':'sched-sf2-a';
+      setSlot(bracketId, schedId, leader, confColor(g));
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER: TEAM NAMES
+// ══════════════════════════════════════════════════════════════
+function renderNames() {
+  const el = document.getElementById('names-list');
+  let html = '';
+  groupKeys().forEach(g => {
+    const pairs = getPairsForGroup(g);
+    if (pairs.length === 0) return;
+    html += `<div style="margin-bottom:24px">
+      <div class="section-label" style="color:${confColor(g)}">${groupDisplayName(g)} — ${confLabel(g)}</div>`;
+    pairs.forEach(pair => {
+      const td = teamDisplay(pair.id);
+      html += `<div class="name-entry-card">
+        <div class="name-entry-top">
+          <div style="display:flex;gap:6px;align-items:center">
+            ${pair.locked ? '<span class="locked-badge">⭐ Fixed Pair</span>' : ''}
+            <span class="badge ${confBadgeCls(g)}">${groupDisplayName(g)}</span>
+          </div>
+          <div class="skill-pill">avg ${pairAvg(pair)}</div>
+        </div>
+        <div class="name-entry-players">${escapeHtml(td.players)}</div>
+        <div class="name-input-row">
+          <input type="text" class="name-input" data-name-pair="${pair.id}" 
+            value="${escapeHtml(STATE.teamNames[pair.id] || '')}" 
+            placeholder="Enter your team name..." maxlength="30">
+          <button class="btn btn-sm" data-save-name="${pair.id}">Save</button>
+        </div>
+        ${td.hasName ? `<div style="margin-top:8px;font-size:12px;color:var(--win)">✓ Set: <b>${escapeHtml(td.name)}</b></div>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function saveTeamName(pairId) {
+  const inp = document.querySelector(`[data-name-pair="${pairId}"]`);
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) { showToast('Please enter a name first'); return; }
+  const old = STATE.teamNames[pairId];
+  STATE.teamNames[pairId] = val;
+  if (old !== val) addFeed('✏️', `Team <b>${escapeHtml(val)}</b> has entered the tournament!`);
+  saveState();
+  renderNames();
+  renderGroups();
+  renderSchedule();
+  showToast(`Team name "${val}" saved! 🎾`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN: PLAYERS
+// ══════════════════════════════════════════════════════════════
+function renderAdminPlayers() {
+  const el = document.getElementById('admin-players');
+  el.innerHTML = STATE.players.map((p, i) => `
+    <div class="player-admin-row">
+      <div class="player-admin-name">${escapeHtml(p.name)}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--muted)">Skill:</span>
+        <input type="number" min="0" max="3" step="0.5" class="player-admin-skill" 
+          data-skill-idx="${i}" value="${p.skill}">
+      </div>
+      <button class="player-admin-status ${p.active?'status-yes':'status-no'}" data-toggle-idx="${i}">
+        ${p.active ? '✓ Playing' : '✗ Not playing'}
+      </button>
+      <button class="btn btn-sm btn-danger" data-remove-idx="${i}" style="font-size:11px;padding:4px 9px" title="Remove">✕</button>
+    </div>`).join('');
+}
+
+function saveAdminPlayers() {
+  document.querySelectorAll('[data-skill-idx]').forEach(inp => {
+    const i = parseInt(inp.dataset.skillIdx, 10);
+    const v = parseFloat(inp.value);
+    if (!isNaN(v) && v >= 0 && v <= 3 && STATE.players[i]) {
+      STATE.players[i].skill = v;
+    }
+  });
+  saveState();
+  showToast('Player changes saved!');
+}
+
+function togglePlayerStatus(idx) {
+  if (!STATE.players[idx]) return;
+  STATE.players[idx].active = !STATE.players[idx].active;
+  renderAdminPlayers();
+}
+
+function removePlayer(idx) {
+  if (!STATE.players[idx]) return;
+  if (!confirm(`Remove ${STATE.players[idx].name}?`)) return;
+  STATE.players.splice(idx, 1);
+  renderAdminPlayers();
+  showToast('Player removed (rebuild pairs to apply)');
+}
+
+function addPlayer() {
+  const name = prompt('Player name:');
+  if (!name) return;
+  const skillStr = prompt('Skill level (0–3):', '1.5');
+  const skill = parseFloat(skillStr);
+  STATE.players.push({
+    name: name.trim(),
+    skill: isNaN(skill) ? 1.5 : Math.min(3, Math.max(0, skill)),
+    active: true
+  });
+  renderAdminPlayers();
+  showToast(`${name} added!`);
+}
+
+function rebuildPairsFromAdmin() {
+  if (!confirm('Rebuild pairs? This clears all scores and team names.')) return;
+  saveAdminPlayers();
+  STATE.pairs = buildPairs(STATE.players);
+  STATE.groups = assignGroups(STATE.pairs, STATE.players, STATE.structure);
+  STATE.scores = {};
+  STATE.teamNames = {};
+  feedLog = [];
+  saveState();
+  renderAll();
+  showToast('Pairs rebuilt!');
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN: STRUCTURE TOGGLE
+// ══════════════════════════════════════════════════════════════
+function renderStructureToggle() {
+  const el = document.getElementById('structure-toggle');
+  if (!el) return;
+  const active = STATE.structure || '4groups';
+  el.innerHTML = `
+    <div class="structure-option ${active==='4groups'?'active':''}" data-structure="4groups">
+      <div class="structure-option-title">
+        <div class="structure-check"></div>
+        4 Groups
+      </div>
+      <div class="structure-option-desc">Inside: Groups A &amp; B (4 pairs each)<br>Outside: Groups C &amp; D (3 pairs each)<br><b style="color:var(--text)">4 group winners → Semi-finals</b></div>
+    </div>
+    <div class="structure-option ${active==='2groups'?'active':''}" data-structure="2groups">
+      <div class="structure-option-title">
+        <div class="structure-check"></div>
+        2 Groups
+      </div>
+      <div class="structure-option-desc">Inside: One big group (8 pairs, 9 matches)<br>Outside: One big group (6 pairs, 6 matches)<br><b style="color:var(--text)">Top 2 per group → Semi-finals</b></div>
+    </div>`;
+}
+
+function switchStructure(newStructure) {
+  if (STATE.structure === newStructure) return;
+  if (!confirm(`Switch to ${newStructure === '2groups' ? '2 Groups' : '4 Groups'}? This clears all scores and team names, and rebuilds groups.`)) return;
+  STATE.structure = newStructure;
+  STATE.pairs = buildPairs(STATE.players);
+  STATE.groups = assignGroups(STATE.pairs, STATE.players, STATE.structure);
+  STATE.scores = {};
+  STATE.teamNames = {};
+  feedLog = [];
+  saveState();
+  renderAll();
+  showToast(`Switched to ${newStructure === '2groups' ? '2 Groups' : '4 Groups'} structure`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN: PAIRS
+// ══════════════════════════════════════════════════════════════
+function renderAdminPairs() {
+  const el = document.getElementById('admin-pairs');
+  const activeNames = STATE.players.filter(p => p.active).map(p => p.name);
+  const gKeys = groupKeys();
+  const lockedDefaultGroup = STATE.structure === '2groups' ? 'I' : 'A';
+  el.innerHTML = STATE.pairs.map((pair, pi) => {
+    const p1Options = activeNames.map(n => `<option value="${escapeHtml(n)}" ${n===pair.p1?'selected':''}>${escapeHtml(n)}</option>`).join('');
+    const p2Options = activeNames.map(n => `<option value="${escapeHtml(n)}" ${n===pair.p2?'selected':''}>${escapeHtml(n)}</option>`).join('') + `<option value="(solo)" ${pair.p2==='(solo)'?'selected':''}>(solo)</option>`;
+    const groupOptions = gKeys.map(g => `<option value="${g}" ${pair.group===g?'selected':''}>${groupDisplayName(g)}</option>`).join('');
+    if (pair.locked) {
+      return `<div class="admin-pair-row">
+        <div style="font-size:11px;color:var(--muted);width:20px;text-align:right">${pi+1}</div>
+        <div style="flex:1;font-weight:600;font-size:13px">${escapeHtml(pair.p1)} / ${escapeHtml(pair.p2)}</div>
+        <span class="locked-badge">🔒 Fixed</span>
+        <select class="admin-pair-group" disabled><option>${groupDisplayName(lockedDefaultGroup)}</option></select>
+        <div class="skill-pill">avg ${pairAvg(pair)}</div>
+      </div>`;
+    }
+    return `<div class="admin-pair-row">
+      <div style="font-size:11px;color:var(--muted);width:20px;text-align:right">${pi+1}</div>
+      <select class="admin-pair-select" data-pair-idx="${pi}" data-pair-field="p1">${p1Options}</select>
+      <span style="color:var(--muted);font-size:12px">/</span>
+      <select class="admin-pair-select" data-pair-idx="${pi}" data-pair-field="p2">${p2Options}</select>
+      <select class="admin-pair-group" data-pair-idx="${pi}" data-pair-field="group">${groupOptions}</select>
+      <div class="skill-pill">avg ${pairAvg(pair)}</div>
+    </div>`;
+  }).join('');
+}
+
+function saveAdminPairs() {
+  document.querySelectorAll('[data-pair-idx]').forEach(sel => {
+    const pi = parseInt(sel.dataset.pairIdx, 10);
+    const field = sel.dataset.pairField;
+    const pair = STATE.pairs[pi];
+    if (!pair || pair.locked) return;
+    pair[field] = sel.value;
+  });
+  // Rebuild groups from pair.group using correct keys for current structure
+  const emptyGroups = STATE.structure === '2groups' ? {I:[], O:[]} : {A:[], B:[], C:[], D:[]};
+  STATE.groups = emptyGroups;
+  STATE.pairs.forEach(pair => {
+    if (pair.group && STATE.groups[pair.group]) STATE.groups[pair.group].push(pair.id);
+  });
+  saveState();
+  renderAll();
+  showToast('Pair assignments saved!');
+}
+
+// ══════════════════════════════════════════════════════════════
+// RESETS
+// ══════════════════════════════════════════════════════════════
+function resetScores() {
+  if (!confirm('Reset all scores?')) return;
+  STATE.scores = {};
+  feedLog = [];
+  saveState();
+  renderAll();
+  showToast('Scores reset');
+}
+function resetNames() {
+  if (!confirm('Reset all team names?')) return;
+  STATE.teamNames = {};
+  saveState();
+  renderAll();
+  showToast('Team names reset');
+}
+function fullReset() {
+  if (!confirm('Full reset? All data (scores, names, pairs) will be lost.')) return;
+  STATE = buildDefaultState();
+  feedLog = [];
+  saveState();
+  renderAll();
+  showToast('Full reset complete');
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAV + RENDER
+// ══════════════════════════════════════════════════════════════
+function goto(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const target = document.getElementById(`page-${page}`);
+  if (target) target.classList.add('active');
+  const tab = document.querySelector(`.tab[data-page="${page}"]`);
+  if (tab) tab.classList.add('active');
+  if (page === 'live') renderLive();
+  if (page === 'groups') renderGroups();
+  if (page === 'schedule') renderSchedule();
+  if (page === 'bracket') { renderGroups(); syncBracket(); }
+  if (page === 'names') renderNames();
+  if (page === 'admin') { renderStructureToggle(); renderAdminPlayers(); renderAdminPairs(); }
+}
+
+function renderAll() {
+  renderLive();
+  renderGroups();
+  renderSchedule();
+  syncBracket();
+  renderNames();
+  if (adminUnlocked) { renderStructureToggle(); renderAdminPlayers(); renderAdminPairs(); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// PIN
+// ══════════════════════════════════════════════════════════════
+function openPin() {
+  document.getElementById('pin-overlay').classList.add('show');
+  const inp = document.getElementById('pin-input');
+  inp.value = '';
+  document.getElementById('pin-error').textContent = '';
+  setTimeout(() => inp.focus(), 50);
+}
+function closePin() {
+  document.getElementById('pin-overlay').classList.remove('show');
+}
+function checkPin(val) {
+  if (val.length < 4) {
+    document.getElementById('pin-error').textContent = '';
+    return;
+  }
+  if (val === ADMIN_PIN) {
+    adminUnlocked = true;
+    closePin();
+    goto('admin');
+  } else {
+    document.getElementById('pin-error').textContent = 'Incorrect PIN.';
+    document.getElementById('pin-input').value = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// EVENT DELEGATION
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('click', (e) => {
+  const target = e.target;
+  const closestWithAttr = (attr) => target.closest(`[${attr}]`);
+
+  // Tab nav
+  const tab = target.closest('.tab');
+  if (tab && tab.dataset.page) {
+    const page = tab.dataset.page;
+    if (page === 'admin' && !adminUnlocked) {
+      openPin();
+    } else {
+      goto(page);
+    }
+    return;
+  }
+
+  // Close PIN
+  if (target.id === 'btn-close-pin') { closePin(); return; }
+
+  // Save team name
+  const saveNameBtn = closestWithAttr('data-save-name');
+  if (saveNameBtn) {
+    saveTeamName(parseInt(saveNameBtn.dataset.saveName, 10));
+    return;
+  }
+
+  // Admin buttons
+  if (target.id === 'btn-add-player') { addPlayer(); return; }
+  if (target.id === 'btn-save-players') { saveAdminPlayers(); return; }
+  if (target.id === 'btn-rebuild-pairs') { rebuildPairsFromAdmin(); return; }
+  if (target.id === 'btn-save-pairs') { saveAdminPairs(); return; }
+  if (target.id === 'btn-reset-scores') { resetScores(); return; }
+  if (target.id === 'btn-reset-names') { resetNames(); return; }
+  if (target.id === 'btn-full-reset') { fullReset(); return; }
+
+  // Structure toggle
+  const structBtn = target.closest('[data-structure]');
+  if (structBtn) {
+    switchStructure(structBtn.dataset.structure);
+    return;
+  }
+
+  // Toggle player status
+  const toggleBtn = closestWithAttr('data-toggle-idx');
+  if (toggleBtn) {
+    togglePlayerStatus(parseInt(toggleBtn.dataset.toggleIdx, 10));
+    return;
+  }
+
+  // Remove player
+  const removeBtn = closestWithAttr('data-remove-idx');
+  if (removeBtn) {
+    removePlayer(parseInt(removeBtn.dataset.removeIdx, 10));
+    return;
+  }
+});
+
+document.addEventListener('input', (e) => {
+  // Score inputs
+  if (e.target.matches('[data-score="1"]')) {
+    handleScoreInput(e);
+    return;
+  }
+  // PIN input
+  if (e.target.id === 'pin-input') {
+    checkPin(e.target.value);
+    return;
+  }
+  // Player skill input (auto-save value to state on change, not just save)
+  if (e.target.matches('[data-skill-idx]')) {
+    const i = parseInt(e.target.dataset.skillIdx, 10);
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v >= 0 && v <= 3 && STATE.players[i]) {
+      STATE.players[i].skill = v;
+      saveState();
+    }
+    return;
+  }
+});
+
+// Enter key in team name fields saves
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.matches('[data-name-pair]')) {
+    e.preventDefault();
+    saveTeamName(parseInt(e.target.dataset.namePair, 10));
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+STATE = loadState();
+feedLog = loadFeed();
+renderAll();
+</script>
 </body>
 </html>
