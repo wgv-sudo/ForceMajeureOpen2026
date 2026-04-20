@@ -301,15 +301,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 
 <div id="page-admin" class="page">
   <div class="page-title" style="color:var(--gold)">⚙ Admin Panel</div>
-  <div class="page-sub">Manage structure, participants, ratings, and pair assignments</div>
-
-  <div class="admin-section">
-    <div class="admin-section-title">🏗️ Tournament Structure</div>
-    <div class="note">Switch between 4 small groups (recommended default) or 2 big groups. Changing structure rebuilds groups and clears all scores and team names.</div>
-    <div id="structure-toggle" class="structure-toggle"></div>
-  </div>
-
-  <hr class="divider">
+  <div class="page-sub">Manage participants, ratings, and pair assignments</div>
 
   <div class="admin-section">
     <div class="admin-section-title">
@@ -390,9 +382,9 @@ const DEFAULT_PLAYERS = [
   {name:'Wille Järvelä', skill:2.0, active:true},
   {name:'Carola Lindholm', skill:1.8, active:true},
   {name:'Ville Wallgren', skill:1.0, active:true},
-  {name:'Helmi Puustinen', skill:1.0, active:true},
+  {name:'Helmi Puustinen', skill:1.0, active:false},
   {name:'Kerttu Mettälä', skill:1.0, active:true},
-  {name:'Lauri Martin', skill:1.0, active:true},
+  {name:'Lauri Martin', skill:1.0, active:false},
   {name:'Maisa Tuomela', skill:1.0, active:true},
   {name:'Annamari Friskopf', skill:1.0, active:true},
   {name:'Sini Bono', skill:1.0, active:true},
@@ -410,12 +402,26 @@ const MATCH_TEMPLATES = {
   4: [{r:1,h:0,a:1}, {r:2,h:2,a:3}, {r:3,h:0,a:2}],
   // 3 pairs, 3 slots, 1 court per slot: full round-robin, everyone plays 2
   3: [{r:1,h:0,a:1}, {r:2,h:0,a:2}, {r:3,h:1,a:2}],
+  // 7 pairs, 3 slots, 3 courts per slot = 9 matches
+  // Each pair plays 2-3 matches; one pair rests per slot
+  7: [
+    {r:1,h:0,a:6}, {r:1,h:1,a:5}, {r:1,h:2,a:4},
+    {r:2,h:3,a:6}, {r:2,h:0,a:5}, {r:2,h:1,a:4},
+    {r:3,h:2,a:3}, {r:3,h:0,a:4}, {r:3,h:1,a:6},
+  ],
   // 8 pairs, 3 slots, 3 courts per slot = 9 matches
   // Each pair plays 2-3 matches; opponents are varied
   8: [
     {r:1,h:0,a:7}, {r:1,h:1,a:6}, {r:1,h:2,a:5},
     {r:2,h:3,a:4}, {r:2,h:0,a:5}, {r:2,h:1,a:7},
     {r:3,h:2,a:6}, {r:3,h:3,a:5}, {r:3,h:0,a:4},
+  ],
+  // 5 pairs, 3 slots, 2 courts per slot = 6 matches
+  // Each pair plays 2-3 matches
+  5: [
+    {r:1,h:0,a:4}, {r:1,h:1,a:3},
+    {r:2,h:2,a:4}, {r:2,h:0,a:3},
+    {r:3,h:1,a:4}, {r:3,h:2,a:3},
   ],
   // 6 pairs, 3 slots, 2 courts per slot = 6 matches
   // Each pair plays 2 matches; opponents are varied
@@ -474,7 +480,7 @@ function saveState() {
 function buildDefaultState() {
   const players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
   const pairs = buildPairs(players);
-  const structure = '4groups'; // or '2groups'
+  const structure = '2groups';
   const groups = assignGroups(pairs, players, structure);
   return { players, pairs, groups, structure, scores: {}, teamNames: {} };
 }
@@ -514,9 +520,15 @@ function assignGroups(pairs, players, structure = '4groups') {
   const rest = pairs.filter(p => !p.locked).sort((a,b) => pairAvgFn(b) - pairAvgFn(a));
 
   if (structure === '2groups') {
-    // One big Inside group (8 pairs) + one big Outside group (6 pairs)
-    // Locked pair goes to Inside (I)
-    const insideCount = locked ? 7 : 8;
+    // Split pairs between Inside (3 courts) and Outside (2 courts)
+    // Try to match the court-capacity ratio (60/40) with hard caps: max 8 indoor, max 6 outdoor
+    // Locked pair always goes indoor
+    const totalPairs = pairs.length;
+    // Aim for ceil(3/5 * total) indoor, clamped to [3, 8]
+    let insideTotal = Math.min(8, Math.max(3, Math.ceil(totalPairs * 0.6)));
+    // But outdoor can't exceed 6
+    if (totalPairs - insideTotal > 6) insideTotal = totalPairs - 6;
+    const insideCount = locked ? insideTotal - 1 : insideTotal;
     const insidePool = rest.slice(0, insideCount);
     const outsidePool = rest.slice(insideCount);
     const I = [], O = [];
@@ -1363,3 +1375,4 @@ renderAll();
 </script>
 </body>
 </html>
+
