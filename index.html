@@ -93,6 +93,11 @@ input,select{font-family:inherit}
 .score-in.win{border-color:var(--win);color:var(--win);background:var(--win-dim)}
 .free-slot{background:var(--s1);border:1px dashed var(--border);border-radius:8px;padding:12px 14px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:8px}
 .matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:20px}
+.match-submit-row{margin-top:8px;display:flex;justify-content:flex-end;gap:6px}
+.match-btn{font-size:12px;padding:5px 12px}
+.match-card.match-submitted{border-color:rgba(52,211,153,0.25);background:linear-gradient(to bottom,var(--s1),rgba(52,211,153,0.03))}
+.match-card.match-submitted .score-in{opacity:0.85}
+.score-in:disabled{cursor:default;background:var(--s1)}
 
 /* SLOT HEADERS */
 .slot-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
@@ -766,7 +771,12 @@ function renderSchedule() {
         const court = courtFor(g, slot, matchIdxInSlot);
         const groupTag = STATE.structure === '2groups' ? confLabel(g) : `Group ${g}`;
 
-        html += `<div class="match-card">
+        const submitted = sv.h !== '' && sv.a !== '' && !isNaN(h) && !isNaN(a);
+        const btnHtml = submitted
+          ? `<button class="btn btn-sm btn-ghost match-btn" data-edit-key="${key}">✎ Edit</button>`
+          : `<button class="btn btn-sm match-btn" data-submit="1" data-group="${g}" data-idx="${idx}" data-home="${home.id}" data-away="${away.id}">Submit</button>`;
+
+        html += `<div class="match-card ${submitted?'match-submitted':''}" id="mc-${key}">
           <div class="match-card-head">
             <span class="court-tag" style="color:${confColor(g)}">${court} · ${groupTag}</span>
             <span class="time-tag">${SLOT_TIMES[slot-1]}</span>
@@ -778,9 +788,10 @@ function renderSchedule() {
                 <div class="tplayers">${escapeHtml(tdH.players)}</div>
               </div>
               <input type="number" min="0" max="99" class="score-in ${hWin?'win':''}" 
-                data-score="1" data-group="${g}" data-idx="${idx}" data-side="h" 
+                id="${key}-h"
+                data-group="${g}" data-idx="${idx}" data-side="h" 
                 data-home="${home.id}" data-away="${away.id}"
-                value="${escapeHtml(sv.h)}" placeholder="—">
+                value="${escapeHtml(sv.h)}" placeholder="—" ${submitted?'disabled':''}>
             </div>
             <div class="match-vs">VS</div>
             <div class="match-team-row">
@@ -789,9 +800,13 @@ function renderSchedule() {
                 <div class="tplayers">${escapeHtml(tdA.players)}</div>
               </div>
               <input type="number" min="0" max="99" class="score-in ${aWin?'win':''}" 
-                data-score="1" data-group="${g}" data-idx="${idx}" data-side="a"
+                id="${key}-a"
+                data-group="${g}" data-idx="${idx}" data-side="a"
                 data-home="${home.id}" data-away="${away.id}"
-                value="${escapeHtml(sv.a)}" placeholder="—">
+                value="${escapeHtml(sv.a)}" placeholder="—" ${submitted?'disabled':''}>
+            </div>
+            <div class="match-submit-row">
+              ${btnHtml}
             </div>
           </div>
         </div>`;
@@ -844,52 +859,75 @@ function renderSchedule() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// SCORE HANDLER (via event delegation)
+// SCORE SUBMIT / EDIT HANDLERS
 // ══════════════════════════════════════════════════════════════
-function handleScoreInput(e) {
-  const inp = e.target;
-  if (!inp.matches('[data-score="1"]')) return;
-  const g = inp.dataset.group;
-  const idx = parseInt(inp.dataset.idx, 10);
-  const side = inp.dataset.side;
-  const homeId = parseInt(inp.dataset.home, 10);
-  const awayId = parseInt(inp.dataset.away, 10);
-  const val = inp.value;
+function submitScore(g, idx, homeId, awayId) {
   const key = matchKey(g, idx);
-  if (!STATE.scores[key]) STATE.scores[key] = {h:'', a:''};
-  STATE.scores[key][side] = val;
+  const hi = document.getElementById(`${key}-h`);
+  const ai = document.getElementById(`${key}-a`);
+  if (!hi || !ai) return;
 
-  // Update win styling on both inputs for this match
-  const body = inp.closest('.match-body');
-  if (body) {
-    const inputs = body.querySelectorAll('.score-in');
-    if (inputs.length === 2) {
-      const hVal = inputs[0].value, aVal = inputs[1].value;
-      const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
-      inputs[0].classList.toggle('win', !isNaN(h) && !isNaN(a) && h > a);
-      inputs[1].classList.toggle('win', !isNaN(h) && !isNaN(a) && a > h);
-    }
+  const hVal = hi.value.trim();
+  const aVal = ai.value.trim();
+  if (hVal === '' || aVal === '') {
+    showToast('Please enter both scores before submitting');
+    return;
+  }
+  const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
+  if (isNaN(h) || isNaN(a) || h < 0 || a < 0) {
+    showToast('Invalid score — use numbers only');
+    return;
+  }
+  if (h === a) {
+    if (!confirm('Scores are tied. Submit as a draw?')) return;
   }
 
-  // Log completed match to feed
-  const sv = STATE.scores[key];
-  if (sv.h !== '' && sv.a !== '') {
-    const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
-    if (!isNaN(h) && !isNaN(a)) {
-      const tH = teamDisplay(homeId);
-      const tA = teamDisplay(awayId);
-      const nameH = tH.hasName ? tH.name : tH.players;
-      const nameA = tA.hasName ? tA.name : tA.players;
-      // Dedupe: only log if different from last entry
-      const last = feedLog[feedLog.length - 1];
-      const newMsg = `<b>${escapeHtml(nameH)}</b> ${h} – ${a} <b>${escapeHtml(nameA)}</b> · Group ${g}`;
-      if (!last || last.msg !== newMsg) {
-        addFeed('🎾', newMsg);
+  // Commit to state
+  STATE.scores[key] = { h: String(h), a: String(a) };
+
+  // Feed entry
+  const tH = teamDisplay(homeId);
+  const tA = teamDisplay(awayId);
+  const nameH = tH.hasName ? tH.name : tH.players;
+  const nameA = tA.hasName ? tA.name : tA.players;
+  const groupTag = STATE.structure === '2groups' ? confLabel(g) : `Group ${g}`;
+  addFeed('🎾', `<b>${escapeHtml(nameH)}</b> ${h} – ${a} <b>${escapeHtml(nameA)}</b> · ${groupTag}`);
+
+  saveState();
+  renderSchedule();     // redraw to flip to "Edit" state
+  renderGroups();       // update standings
+  renderLive();         // update feed + stats
+  syncBracket();
+  showToast('Score submitted ✓');
+}
+
+function editScore(key) {
+  // Clear the score so user can re-enter
+  const [g, idxStr] = key.split('_');
+  const idx = parseInt(idxStr, 10);
+
+  // Remove score from state
+  if (STATE.scores[key]) {
+    // Log the correction to feed (optional, helps transparency)
+    const sch = getScheduleForGroup(g);
+    const match = sch[idx];
+    if (match) {
+      const pairs = getPairsForGroup(g);
+      const home = pairs[match.h], away = pairs[match.a];
+      if (home && away) {
+        const tH = teamDisplay(home.id), tA = teamDisplay(away.id);
+        const nameH = tH.hasName ? tH.name : tH.players;
+        const nameA = tA.hasName ? tA.name : tA.players;
+        addFeed('↩️', `Score reopened for editing: <b>${escapeHtml(nameH)}</b> vs <b>${escapeHtml(nameA)}</b>`);
       }
     }
+    delete STATE.scores[key];
   }
 
   saveState();
+  renderSchedule();
+  renderGroups();
+  renderLive();
   syncBracket();
 }
 
@@ -1337,20 +1375,34 @@ document.addEventListener('click', (e) => {
     removePlayer(parseInt(removeBtn.dataset.removeIdx, 10));
     return;
   }
+
+  // Submit score
+  const submitBtn = closestWithAttr('data-submit');
+  if (submitBtn) {
+    submitScore(
+      submitBtn.dataset.group,
+      parseInt(submitBtn.dataset.idx, 10),
+      parseInt(submitBtn.dataset.home, 10),
+      parseInt(submitBtn.dataset.away, 10)
+    );
+    return;
+  }
+
+  // Edit submitted score
+  const editBtn = closestWithAttr('data-edit-key');
+  if (editBtn) {
+    editScore(editBtn.dataset.editKey);
+    return;
+  }
 });
 
 document.addEventListener('input', (e) => {
-  // Score inputs
-  if (e.target.matches('[data-score="1"]')) {
-    handleScoreInput(e);
-    return;
-  }
   // PIN input
   if (e.target.id === 'pin-input') {
     checkPin(e.target.value);
     return;
   }
-  // Player skill input (auto-save value to state on change, not just save)
+  // Player skill input (auto-save value to state on change)
   if (e.target.matches('[data-skill-idx]')) {
     const i = parseInt(e.target.dataset.skillIdx, 10);
     const v = parseFloat(e.target.value);
@@ -1362,11 +1414,21 @@ document.addEventListener('input', (e) => {
   }
 });
 
-// Enter key in team name fields saves
+// Enter key in team name fields saves; Enter in score inputs triggers submit
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.matches('[data-name-pair]')) {
     e.preventDefault();
     saveTeamName(parseInt(e.target.dataset.namePair, 10));
+    return;
+  }
+  if (e.key === 'Enter' && e.target.classList.contains('score-in') && !e.target.disabled) {
+    e.preventDefault();
+    // Find the submit button within the same match card and click it
+    const card = e.target.closest('.match-card');
+    if (card) {
+      const btn = card.querySelector('[data-submit="1"]');
+      if (btn) btn.click();
+    }
   }
 });
 
@@ -1379,4 +1441,3 @@ renderAll();
 </script>
 </body>
 </html>
-
