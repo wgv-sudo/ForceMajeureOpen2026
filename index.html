@@ -111,6 +111,7 @@ input,select{font-family:inherit}
 /* BRACKET */
 .bracket-wrap{overflow-x:auto;padding-bottom:12px;margin-bottom:24px}
 .bracket{display:flex;align-items:stretch;min-width:560px}
+.bracket.bracket-wide{min-width:900px}
 .b-round{display:flex;flex-direction:column;flex:1;padding:0 6px}
 .b-round-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .b-matches{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:10px}
@@ -118,6 +119,10 @@ input,select{font-family:inherit}
 .b-match-head{padding:5px 10px;background:var(--s2);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)}
 .b-team{padding:10px 12px;border-bottom:1px solid var(--border);min-height:48px}
 .b-team:last-child{border-bottom:none}
+.b-team-name{font-weight:700;font-size:13px;color:var(--text)}
+.b-team-players{font-size:11px;color:var(--muted);margin-top:2px}
+.b-team.b-team-win{background:rgba(52,211,153,0.06)}
+.b-team.b-team-win .b-team-name{color:var(--win)}
 .b-conn{width:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .champ-box{text-align:center;padding:28px 20px;background:var(--s1);border:1px solid rgba(192,132,252,0.3);border-radius:12px;margin-top:20px}
 .champ-trophy{font-size:44px;margin-bottom:8px}
@@ -250,51 +255,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 
 <div id="page-bracket" class="page">
   <div class="page-title">Bracket</div>
-  <div class="page-sub">Semi-finals, Final &amp; 3rd Place Match</div>
-  <div class="bracket-wrap">
-    <div class="bracket">
-      <div class="b-round">
-        <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">60 min mark</span></div>
-        <div class="b-matches">
-          <div class="b-match">
-            <div class="b-match-head" style="color:var(--kno)">SF1 · Court 1 · 1:00–1:15</div>
-            <div class="b-team" id="sf1-t1"><div class="tbd" id="sf1-t1-label">Winner Group A</div></div>
-            <div class="b-team" id="sf1-t2"><div class="tbd" id="sf1-t2-label">Winner Group C</div></div>
-          </div>
-          <div class="b-match">
-            <div class="b-match-head" style="color:var(--kno)">SF2 · Court 2 · 1:00–1:15</div>
-            <div class="b-team" id="sf2-t1"><div class="tbd" id="sf2-t1-label">Winner Group B</div></div>
-            <div class="b-team" id="sf2-t2"><div class="tbd" id="sf2-t2-label">Winner Group D</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="b-conn">
-        <svg width="20" height="140" viewBox="0 0 20 140" fill="none">
-          <path d="M0,35 H10 V105 H0" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-          <line x1="10" y1="70" x2="20" y2="70" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-        </svg>
-      </div>
-      <div class="b-round">
-        <div class="b-round-title">Final<br><span style="font-size:9px;color:var(--muted)">80 min mark</span></div>
-        <div class="b-matches">
-          <div class="b-match" style="border-color:rgba(192,132,252,0.25)">
-            <div class="b-match-head" style="color:var(--kno)">🏆 FINAL · Court 1 · 1:20–1:35</div>
-            <div class="b-team"><div class="tbd">Winner SF1</div></div>
-            <div class="b-team"><div class="tbd">Winner SF2</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <hr class="divider">
-  <div class="section-label">3rd Place</div>
-  <div style="max-width:300px">
-    <div class="b-match">
-      <div class="b-match-head">3rd Place · Court 2 · 1:20–1:35</div>
-      <div class="b-team"><div class="tbd">Loser SF1</div></div>
-      <div class="b-team"><div class="tbd">Loser SF2</div></div>
-    </div>
-  </div>
+  <div class="page-sub">Quarter-Finals → Semi-Finals → Final</div>
+  <div id="bracket-content"></div>
 </div>
 
 <div id="page-names" class="page">
@@ -649,6 +611,155 @@ function computeStandings(g) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// KNOCKOUT COMPUTATION
+// ══════════════════════════════════════════════════════════════
+// Quarter-finals: I-1 vs O-2, I-2 vs O-1, I-3 vs I-4
+// Winners advance to SFs; among 3 QF losers, the one with highest
+// normalised group points advances as a "lucky loser"
+// Normalised points = pts / (2 * games_played_in_group_stage)
+
+function getMaxPossiblePts(g) {
+  // 2 points per match, each pair plays some fraction of total matches
+  // Use the group's match count × 2 as the upper bound for a single pair's pts
+  // Actually: per pair, max pts = 2 × (games they play)
+  const sch = getScheduleForGroup(g);
+  // Per pair, count matches where they appear as h or a
+  return sch;
+}
+
+function normalisedPts(statsEntry, g) {
+  const sch = getScheduleForGroup(g);
+  const pairIdx = getPairsForGroup(g).findIndex(p => p.id === statsEntry.pair.id);
+  if (pairIdx < 0) return 0;
+  const gamesPlayed = sch.filter(m => m.h === pairIdx || m.a === pairIdx).length;
+  if (gamesPlayed === 0) return 0;
+  return statsEntry.pts / (gamesPlayed * 2);
+}
+
+// Get the 6 teams that qualify (by group rank); returns array of {pair, seed, g, rank, pts, norm}
+function getQualifiers() {
+  const quals = [];
+  const stI = computeStandings('I');
+  const stO = computeStandings('O');
+  // Inside top 4
+  for (let i = 0; i < 4 && i < stI.length; i++) {
+    quals.push({
+      pair: stI[i].pair, g: 'I', rank: i + 1,
+      pts: stI[i].pts, norm: normalisedPts(stI[i], 'I'),
+      label: `I-${i+1}`
+    });
+  }
+  // Outside top 2
+  for (let i = 0; i < 2 && i < stO.length; i++) {
+    quals.push({
+      pair: stO[i].pair, g: 'O', rank: i + 1,
+      pts: stO[i].pts, norm: normalisedPts(stO[i], 'O'),
+      label: `O-${i+1}`
+    });
+  }
+  return quals;
+}
+
+// QF seeding: 1v6, 2v5, 3v4 in the 6-team format
+// With our qualifiers [I-1, I-2, I-3, I-4, O-1, O-2], seeds are:
+//   seed1 = I-1, seed2 = I-2, seed3 = I-3, seed4 = I-4, seed5 = O-1, seed6 = O-2
+// So QF1 = I-1 vs O-2, QF2 = I-2 vs O-1, QF3 = I-3 vs I-4
+const QF_PAIRINGS = [
+  { id: 'QF1', homeSeed: 0, awaySeed: 5 }, // I-1 vs O-2
+  { id: 'QF2', homeSeed: 1, awaySeed: 4 }, // I-2 vs O-1
+  { id: 'QF3', homeSeed: 2, awaySeed: 3 }, // I-3 vs I-4
+];
+
+// Return the home/away qualifier for a given QF id
+function getQFTeams(qfId) {
+  const quals = getQualifiers();
+  if (quals.length < 6) return { home: null, away: null };
+  const p = QF_PAIRINGS.find(x => x.id === qfId);
+  if (!p) return { home: null, away: null };
+  return { home: quals[p.homeSeed], away: quals[p.awaySeed] };
+}
+
+// Return the winner qualifier for a given QF, or null if not decided
+function getQFWinner(qfId) {
+  const { home, away } = getQFTeams(qfId);
+  if (!home || !away) return null;
+  const sv = STATE.scores[qfId] || {h:'', a:''};
+  if (sv.h === '' || sv.a === '') return null;
+  const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+  if (isNaN(h) || isNaN(a)) return null;
+  if (h === a) return null;
+  return h > a ? home : away;
+}
+
+function getQFLoser(qfId) {
+  const { home, away } = getQFTeams(qfId);
+  if (!home || !away) return null;
+  const sv = STATE.scores[qfId] || {h:'', a:''};
+  if (sv.h === '' || sv.a === '') return null;
+  const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+  if (isNaN(h) || isNaN(a)) return null;
+  if (h === a) return null;
+  return h > a ? away : home;
+}
+
+// Return the 4 SF teams (3 QF winners + 1 lucky loser), or null entries if QFs not done
+// Lucky loser = QF loser with highest normalised group-stage pts
+function getSFTeams() {
+  const w1 = getQFWinner('QF1');
+  const w2 = getQFWinner('QF2');
+  const w3 = getQFWinner('QF3');
+  const losers = ['QF1','QF2','QF3'].map(id => getQFLoser(id)).filter(Boolean);
+  let luckyLoser = null;
+  if (losers.length === 3) {
+    // Pick highest normalised pts (tie-break by raw pts, then rank)
+    luckyLoser = [...losers].sort((a, b) =>
+      b.norm - a.norm || b.pts - a.pts || a.rank - b.rank
+    )[0];
+  }
+  // SF seeding: place QF1 winner vs lucky loser on one side, QF2 vs QF3 winners on the other
+  // This gives: SF1 = QF1-W vs LL, SF2 = QF2-W vs QF3-W
+  return {
+    sf1Home: w1,
+    sf1Away: luckyLoser,
+    sf2Home: w2,
+    sf2Away: w3,
+    allQFsDone: !!(w1 && w2 && w3),
+  };
+}
+
+function getKnockoutWinner(matchId) {
+  // Returns qualifier-like object {pair, label} for winner, or null
+  const sv = STATE.scores[matchId] || {h:'', a:''};
+  if (sv.h === '' || sv.a === '') return null;
+  const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+  if (isNaN(h) || isNaN(a) || h === a) return null;
+  let home = null, away = null;
+  if (matchId === 'SF1') { const sf = getSFTeams(); home = sf.sf1Home; away = sf.sf1Away; }
+  else if (matchId === 'SF2') { const sf = getSFTeams(); home = sf.sf2Home; away = sf.sf2Away; }
+  else if (matchId === 'FINAL') {
+    home = getKnockoutWinner('SF1');
+    away = getKnockoutWinner('SF2');
+  }
+  if (!home || !away) return null;
+  return h > a ? home : away;
+}
+
+function getKnockoutLoser(matchId) {
+  const sv = STATE.scores[matchId] || {h:'', a:''};
+  if (sv.h === '' || sv.a === '') return null;
+  const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+  if (isNaN(h) || isNaN(a) || h === a) return null;
+  let home = null, away = null;
+  if (matchId === 'SF1') { const sf = getSFTeams(); home = sf.sf1Home; away = sf.sf1Away; }
+  else if (matchId === 'SF2') { const sf = getSFTeams(); home = sf.sf2Home; away = sf.sf2Away; }
+  if (!home || !away) return null;
+  return h > a ? away : home;
+}
+
+// Knockout matches use scores stored under keys: QF1, QF2, QF3, SF1, SF2, FINAL, THIRD
+const KNOCKOUT_KEYS = ['QF1','QF2','QF3','SF1','SF2','FINAL','THIRD'];
+
+// ══════════════════════════════════════════════════════════════
 // FEED
 // ══════════════════════════════════════════════════════════════
 function addFeed(icon, msg) {
@@ -696,7 +807,6 @@ function renderLive() {
 function renderGroups() {
   const el = document.getElementById('groups-layout');
   let html = '';
-  const advanceCount = STATE.structure === '2groups' ? 2 : 1;
   groupKeys().forEach(g => {
     const st = computeStandings(g);
     const sch = getScheduleForGroup(g);
@@ -704,6 +814,8 @@ function renderGroups() {
       const sv = getScore(g, i);
       return sv.h !== '' && sv.a !== '';
     }).length;
+    // Inside: top 4 qualify for QFs. Outside: top 2 qualify for QFs.
+    const advanceCount = g === 'I' ? 4 : 2;
 
     html += `<div>
       <div class="card">
@@ -820,42 +932,108 @@ function renderSchedule() {
     html += `</div>`;
   }
 
-  // Knockout section — labels depend on structure
-  const sf1Home = STATE.structure === '2groups' ? 'Inside 1st' : 'Winner Group A';
-  const sf1Away = STATE.structure === '2groups' ? 'Outside 2nd' : 'Winner Group C';
-  const sf2Home = STATE.structure === '2groups' ? 'Outside 1st' : 'Winner Group B';
-  const sf2Away = STATE.structure === '2groups' ? 'Inside 2nd' : 'Winner Group D';
+  // Knockout section — QFs + SFs + Final + 3rd place
+  const sf = getSFTeams();
+  const { home: qf1h, away: qf1a } = getQFTeams('QF1');
+  const { home: qf2h, away: qf2a } = getQFTeams('QF2');
+  const { home: qf3h, away: qf3a } = getQFTeams('QF3');
+  const finalH = getKnockoutWinner('SF1');
+  const finalA = getKnockoutWinner('SF2');
+  const thirdH = getKnockoutLoser('SF1');
+  const thirdA = getKnockoutLoser('SF2');
 
-  html += `<div class="hour-banner"><div class="hour-big" style="color:var(--kno)">HOUR 2</div><div class="hour-desc">Knockouts · SF → Final + 3rd Place</div><hr class="divline"></div>
+  html += `<div class="hour-banner"><div class="hour-big" style="color:var(--kno)">HOUR 2</div><div class="hour-desc">Knockouts · Quarter-Finals → Semi-Finals → Final</div><hr class="divline"></div>
+  <div class="slot-head"><div class="slot-title">Slot 4 · Quarter-Finals</div><div class="slot-time">1:00–1:15</div></div>
   <div class="matches-grid">
-    <div class="match-card"><div class="match-card-head"><span class="court-tag" style="color:var(--kno)">Court 1 · SF1</span><span class="time-tag">1:00–1:15</span></div>
-    <div class="match-body">
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf1-h">${sf1Home}</div></div></div>
-      <div class="match-vs">VS</div>
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf1-a">${sf1Away}</div></div></div>
-    </div></div>
-    <div class="match-card"><div class="match-card-head"><span class="court-tag" style="color:var(--kno)">Court 2 · SF2</span><span class="time-tag">1:00–1:15</span></div>
-    <div class="match-body">
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf2-h">${sf2Home}</div></div></div>
-      <div class="match-vs">VS</div>
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed" id="sched-sf2-a">${sf2Away}</div></div></div>
-    </div></div>
-    <div class="match-card" style="border-color:rgba(192,132,252,0.25)"><div class="match-card-head"><span class="court-tag" style="color:var(--kno)">Court 1 · 🏆 FINAL</span><span class="time-tag">1:20–1:35</span></div>
-    <div class="match-body">
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Winner SF1</div></div></div>
-      <div class="match-vs">VS</div>
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Winner SF2</div></div></div>
-    </div></div>
-    <div class="match-card"><div class="match-card-head"><span class="court-tag">Court 2 · 3rd Place</span><span class="time-tag">1:20–1:35</span></div>
-    <div class="match-body">
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Loser SF1</div></div></div>
-      <div class="match-vs">VS</div>
-      <div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">Loser SF2</div></div></div>
-    </div></div>
+    ${renderKnockoutCard('QF1', 'Court 1', '1:00–1:15', qf1h, qf1a, 'QF1')}
+    ${renderKnockoutCard('QF2', 'Court 2', '1:00–1:15', qf2h, qf2a, 'QF2')}
+    ${renderKnockoutCard('QF3', 'Court 3', '1:00–1:15', qf3h, qf3a, 'QF3')}
+  </div>
+  <div class="slot-head"><div class="slot-title">Slot 5 · Semi-Finals</div><div class="slot-time">1:20–1:35</div></div>
+  <div class="matches-grid">
+    ${renderKnockoutCard('SF1', 'Court 1', '1:20–1:35', sf.sf1Home, sf.sf1Away, 'SF1', 'QF1 winner vs Lucky Loser')}
+    ${renderKnockoutCard('SF2', 'Court 2', '1:20–1:35', sf.sf2Home, sf.sf2Away, 'SF2', 'QF2 winner vs QF3 winner')}
+  </div>
+  <div class="slot-head"><div class="slot-title">Slot 6 · Final &amp; 3rd Place</div><div class="slot-time">1:40–1:55</div></div>
+  <div class="matches-grid">
+    ${renderKnockoutCard('FINAL', 'Court 1', '1:40–1:55', finalH, finalA, '🏆 FINAL', null, true)}
+    ${renderKnockoutCard('THIRD', 'Court 2', '1:40–1:55', thirdH, thirdA, '3rd Place')}
   </div>`;
 
   document.getElementById('schedule-content').innerHTML = html;
   syncBracket();
+}
+
+// Render a single knockout match card (QF, SF, Final, 3rd place)
+// home/away are qualifier objects {pair, label} or null if not yet decided
+function renderKnockoutCard(matchId, court, time, home, away, title, subtitle, isFinal) {
+  const sv = STATE.scores[matchId] || { h:'', a:'' };
+  const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+  const submitted = sv.h !== '' && sv.a !== '' && !isNaN(h) && !isNaN(a);
+  const hWin = submitted && h > a;
+  const aWin = submitted && a > h;
+  const canSubmit = !!(home && away);
+
+  const teamRowHtml = (team, side, winClass) => {
+    if (team && team.pair) {
+      const td = teamDisplay(team.pair.id);
+      const nameHtml = `<div class="tname ${td.hasName?'':'unnamed'}">${escapeHtml(td.name)}</div>
+        <div class="tplayers">${escapeHtml(td.players)} <span style="color:var(--kno)">· ${team.label}</span></div>`;
+      return `<div class="match-team-row">
+        <div class="match-team-info">${nameHtml}</div>
+        <input type="number" min="0" max="99" class="score-in ${winClass}" 
+          id="${matchId}-${side}"
+          value="${escapeHtml(sv[side])}" placeholder="—" ${submitted?'disabled':''} ${!canSubmit?'disabled':''}>
+      </div>`;
+    }
+    // Not decided yet
+    return `<div class="match-team-row">
+      <div class="match-team-info"><div class="tname unnamed">${escapeHtml(side==='h'?(subtitle?subtitle.split(' vs ')[0]:'TBD'):(subtitle?subtitle.split(' vs ')[1]:'TBD'))}</div></div>
+      <input type="number" class="score-in" disabled placeholder="—">
+    </div>`;
+  };
+
+  let btnHtml = '';
+  if (canSubmit) {
+    btnHtml = submitted
+      ? `<button class="btn btn-sm btn-ghost match-btn" data-ko-edit="${matchId}">✎ Edit</button>`
+      : `<button class="btn btn-sm match-btn" data-ko-submit="${matchId}">Submit</button>`;
+  } else {
+    btnHtml = `<span style="font-size:11px;color:var(--muted)">Awaiting previous round</span>`;
+  }
+
+  const borderStyle = isFinal ? 'style="border-color:rgba(192,132,252,0.3)"' : '';
+
+  return `<div class="match-card ${submitted?'match-submitted':''}" ${borderStyle} id="kc-${matchId}">
+    <div class="match-card-head">
+      <span class="court-tag" style="color:var(--kno)">${court} · ${title}</span>
+      <span class="time-tag">${time}</span>
+    </div>
+    <div class="match-body">
+      ${home && home.pair 
+        ? teamRowHtml(home, 'h', hWin?'win':'')
+        : `<div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">${tbdLabelFor(matchId, 'h')}</div></div><input type="number" class="score-in" disabled placeholder="—"></div>`}
+      <div class="match-vs">VS</div>
+      ${away && away.pair
+        ? teamRowHtml(away, 'a', aWin?'win':'')
+        : `<div class="match-team-row"><div class="match-team-info"><div class="tname unnamed">${tbdLabelFor(matchId, 'a')}</div></div><input type="number" class="score-in" disabled placeholder="—"></div>`}
+      <div class="match-submit-row">${btnHtml}</div>
+    </div>
+  </div>`;
+}
+
+// Text to show for a knockout slot before teams are decided
+function tbdLabelFor(matchId, side) {
+  const map = {
+    'QF1-h':'Inside 1st', 'QF1-a':'Outside 2nd',
+    'QF2-h':'Inside 2nd', 'QF2-a':'Outside 1st',
+    'QF3-h':'Inside 3rd', 'QF3-a':'Inside 4th',
+    'SF1-h':'QF1 Winner', 'SF1-a':'Lucky Loser',
+    'SF2-h':'QF2 Winner', 'SF2-a':'QF3 Winner',
+    'FINAL-h':'SF1 Winner', 'FINAL-a':'SF2 Winner',
+    'THIRD-h':'SF1 Loser', 'THIRD-a':'SF2 Loser',
+  };
+  return map[`${matchId}-${side}`] || 'TBD';
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -931,84 +1109,180 @@ function editScore(key) {
   syncBracket();
 }
 
-// ══════════════════════════════════════════════════════════════
-// BRACKET SYNC
-// ══════════════════════════════════════════════════════════════
-function updateBracketDefaultLabels() {
-  const labels = STATE.structure === '2groups'
-    ? {sf1t1:'Inside 1st', sf1t2:'Outside 2nd', sf2t1:'Outside 1st', sf2t2:'Inside 2nd'}
-    : {sf1t1:'Winner Group A', sf1t2:'Winner Group C', sf2t1:'Winner Group B', sf2t2:'Winner Group D'};
-  // Only reset labels that are still in TBD state (the parent .b-team contains a .tbd child)
-  const sets = [['sf1-t1-label','sf1t1'],['sf1-t2-label','sf1t2'],['sf2-t1-label','sf2t1'],['sf2-t2-label','sf2t2']];
-  sets.forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('tbd')) el.textContent = labels[key];
-  });
+// Submit a knockout match score (QF, SF, Final, 3rd place)
+function submitKnockoutScore(matchId) {
+  const hi = document.getElementById(`${matchId}-h`);
+  const ai = document.getElementById(`${matchId}-a`);
+  if (!hi || !ai) return;
+  const hVal = hi.value.trim(), aVal = ai.value.trim();
+  if (hVal === '' || aVal === '') { showToast('Please enter both scores'); return; }
+  const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
+  if (isNaN(h) || isNaN(a) || h < 0 || a < 0) { showToast('Invalid score'); return; }
+  if (h === a) { showToast('Knockout matches cannot be a draw'); return; }
+
+  // Determine teams for feed entry
+  let home = null, away = null;
+  if (['QF1','QF2','QF3'].includes(matchId)) {
+    const t = getQFTeams(matchId); home = t.home; away = t.away;
+  } else if (matchId === 'SF1' || matchId === 'SF2') {
+    const sf = getSFTeams();
+    if (matchId === 'SF1') { home = sf.sf1Home; away = sf.sf1Away; }
+    else { home = sf.sf2Home; away = sf.sf2Away; }
+  } else if (matchId === 'FINAL') {
+    home = getKnockoutWinner('SF1');
+    away = getKnockoutWinner('SF2');
+  } else if (matchId === 'THIRD') {
+    home = getKnockoutLoser('SF1');
+    away = getKnockoutLoser('SF2');
+  }
+
+  STATE.scores[matchId] = { h: String(h), a: String(a) };
+
+  if (home && away) {
+    const tH = teamDisplay(home.pair.id), tA = teamDisplay(away.pair.id);
+    const nameH = tH.hasName ? tH.name : tH.players;
+    const nameA = tA.hasName ? tA.name : tA.players;
+    const roundLabel = {QF1:'QF1', QF2:'QF2', QF3:'QF3', SF1:'SF1', SF2:'SF2', FINAL:'🏆 FINAL', THIRD:'3rd Place'}[matchId];
+    addFeed('⚔️', `<b>${escapeHtml(nameH)}</b> ${h} – ${a} <b>${escapeHtml(nameA)}</b> · ${roundLabel}`);
+
+    // On final, announce champion
+    if (matchId === 'FINAL') {
+      const champ = h > a ? home : away;
+      const tC = teamDisplay(champ.pair.id);
+      addFeed('🏆', `Tournament champions: <b>${escapeHtml(tC.hasName ? tC.name : tC.players)}</b>!`);
+    }
+  }
+
+  saveState();
+  renderSchedule();
+  renderLive();
+  syncBracket();
+  showToast('Score submitted ✓');
 }
 
-function syncBracket() {
-  // First reset all bracket slots to TBD (removes stale data when structure changes)
-  ['sf1-t1','sf1-t2','sf2-t1','sf2-t2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    // If element contains only a .tbd child, leave it; otherwise restore TBD
-    const inner = el.querySelector('.tname');
-    if (inner) {
-      // Has a real team — reset to tbd state
-      el.innerHTML = `<div class="tbd" id="${id}-label"></div>`;
-    }
-  });
-  updateBracketDefaultLabels();
+function editKnockoutScore(matchId) {
+  if (!STATE.scores[matchId]) return;
+  // Clear this result AND any dependent downstream results
+  // If editing a QF, SF teams and results also become invalid; clear SF/Final/Third too
+  // If editing an SF, Final and 3rd place also become invalid
+  const clears = [matchId];
+  if (['QF1','QF2','QF3'].includes(matchId)) {
+    clears.push('SF1','SF2','FINAL','THIRD');
+  } else if (matchId === 'SF1' || matchId === 'SF2') {
+    clears.push('FINAL','THIRD');
+  }
+  clears.forEach(k => { delete STATE.scores[k]; });
+  addFeed('↩️', `${matchId} score reopened for editing`);
+  saveState();
+  renderSchedule();
+  renderLive();
+  syncBracket();
+}
 
-  // Also reset schedule knockout labels to unnamed
-  ['sched-sf1-h','sched-sf1-a','sched-sf2-h','sched-sf2-a'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.classList.add('unnamed');
-      el.style.color = '';
-    }
-  });
+// ══════════════════════════════════════════════════════════════
+// BRACKET RENDER (QF → SF → Final + 3rd place)
+// ══════════════════════════════════════════════════════════════
+function renderBracket() {
+  const el = document.getElementById('bracket-content');
+  if (!el) return;
 
-  // Collect advancing teams per structure
-  const setSlot = (bracketId, schedId, pair, confCol) => {
-    if (!pair) return;
-    const td = teamDisplay(pair.id);
-    const displayName = td.hasName ? td.name : td.players;
-    const playersLine = td.hasName ? `<div class="tplayers">${escapeHtml(td.players)}</div>` : '';
-    const bel = document.getElementById(bracketId);
-    if (bel) bel.innerHTML = `<div class="tname">${escapeHtml(displayName)}</div>${playersLine}`;
-    const sel = document.getElementById(schedId);
-    if (sel) {
-      sel.textContent = displayName;
-      sel.classList.remove('unnamed');
-      sel.style.color = confCol;
+  const sf = getSFTeams();
+  const { home: qf1h, away: qf1a } = getQFTeams('QF1');
+  const { home: qf2h, away: qf2a } = getQFTeams('QF2');
+  const { home: qf3h, away: qf3a } = getQFTeams('QF3');
+
+  const bracketTeamHtml = (team, tbdLabel, isWinner) => {
+    if (team && team.pair) {
+      const td = teamDisplay(team.pair.id);
+      const displayName = td.hasName ? td.name : td.players;
+      const winClass = isWinner ? 'b-team-win' : '';
+      return `<div class="b-team ${winClass}">
+        <div class="b-team-name">${escapeHtml(displayName)}${team.label?`<span style="color:var(--kno);font-size:10px;font-weight:500;margin-left:6px">${team.label}</span>`:''}</div>
+        <div class="b-team-players">${escapeHtml(td.players)}</div>
+      </div>`;
     }
+    return `<div class="b-team"><div class="tbd">${tbdLabel}</div></div>`;
   };
 
-  if (STATE.structure === '2groups') {
-    const stI = computeStandings('I');
-    const stO = computeStandings('O');
-    const anyGamesI = stI.some(s => s.pts > 0);
-    const anyGamesO = stO.some(s => s.pts > 0);
-    if (anyGamesI) {
-      setSlot('sf1-t1', 'sched-sf1-h', stI[0]?.pair, 'var(--in)');
-      if (stI[1]) setSlot('sf2-t2', 'sched-sf2-a', stI[1]?.pair, 'var(--in)');
-    }
-    if (anyGamesO) {
-      setSlot('sf2-t1', 'sched-sf2-h', stO[0]?.pair, 'var(--out)');
-      if (stO[1]) setSlot('sf1-t2', 'sched-sf1-a', stO[1]?.pair, 'var(--out)');
-    }
-  } else {
-    ['A','B','C','D'].forEach(g => {
-      const st = computeStandings(g);
-      if (st.length === 0 || st[0].pts === 0) return;
-      const leader = st[0].pair;
-      const bracketId = g==='A'?'sf1-t1' : g==='C'?'sf1-t2' : g==='B'?'sf2-t1':'sf2-t2';
-      const schedId = g==='A'?'sched-sf1-h' : g==='C'?'sched-sf1-a' : g==='B'?'sched-sf2-h':'sched-sf2-a';
-      setSlot(bracketId, schedId, leader, confColor(g));
-    });
-  }
+  const koResult = (matchId) => {
+    const sv = STATE.scores[matchId] || {h:'', a:''};
+    if (sv.h === '' || sv.a === '') return null;
+    const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+    if (isNaN(h) || isNaN(a)) return null;
+    return { h, a, hWin: h > a, aWin: a > h };
+  };
+
+  const bracketMatchHtml = (matchId, title, court, time, home, away, homeTbd, awayTbd, isFinalStyle) => {
+    const r = koResult(matchId);
+    const borderStyle = isFinalStyle ? 'style="border-color:rgba(192,132,252,0.3)"' : '';
+    const scoreBadge = r ? `<span style="margin-left:auto;font-family:'Anton',sans-serif;font-size:13px;color:var(--kno)">${r.h} – ${r.a}</span>` : '';
+    return `<div class="b-match" ${borderStyle}>
+      <div class="b-match-head" style="color:var(--kno);display:flex;align-items:center;gap:6px">
+        <span>${title} · ${court} · ${time}</span>${scoreBadge}
+      </div>
+      ${bracketTeamHtml(home, homeTbd, r?.hWin)}
+      ${bracketTeamHtml(away, awayTbd, r?.aWin)}
+    </div>`;
+  };
+
+  // Lucky loser info display
+  const luckyLoserInfo = sf.sf1Away && sf.allQFsDone
+    ? `<div style="font-size:12px;color:var(--kno);margin-top:12px;padding:8px 12px;background:var(--kno-dim);border-radius:6px;display:inline-block">🎲 Lucky Loser: <b>${escapeHtml(teamDisplay(sf.sf1Away.pair.id).hasName ? teamDisplay(sf.sf1Away.pair.id).name : teamDisplay(sf.sf1Away.pair.id).players)}</b> advances — best normalised group-stage points among QF losers</div>`
+    : '';
+
+  const finalWinner = getKnockoutWinner('FINAL');
+
+  const html = `
+    <div class="bracket-wrap">
+      <div class="bracket bracket-wide">
+        <div class="b-round">
+          <div class="b-round-title">Quarter-Finals<br><span style="font-size:9px;color:var(--muted)">1:00–1:15</span></div>
+          <div class="b-matches">
+            ${bracketMatchHtml('QF1', 'QF1', 'C1', '1:00', qf1h, qf1a, 'Inside 1st', 'Outside 2nd')}
+            ${bracketMatchHtml('QF2', 'QF2', 'C2', '1:00', qf2h, qf2a, 'Inside 2nd', 'Outside 1st')}
+            ${bracketMatchHtml('QF3', 'QF3', 'C3', '1:00', qf3h, qf3a, 'Inside 3rd', 'Inside 4th')}
+          </div>
+        </div>
+        <div class="b-conn">
+          <svg width="20" height="200" viewBox="0 0 20 200" fill="none"><line x1="0" y1="100" x2="20" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/></svg>
+        </div>
+        <div class="b-round">
+          <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">1:20–1:35</span></div>
+          <div class="b-matches">
+            ${bracketMatchHtml('SF1', 'SF1', 'C1', '1:20', sf.sf1Home, sf.sf1Away, 'QF1 Winner', 'Lucky Loser')}
+            ${bracketMatchHtml('SF2', 'SF2', 'C2', '1:20', sf.sf2Home, sf.sf2Away, 'QF2 Winner', 'QF3 Winner')}
+          </div>
+        </div>
+        <div class="b-conn">
+          <svg width="20" height="200" viewBox="0 0 20 200" fill="none"><line x1="0" y1="100" x2="20" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/></svg>
+        </div>
+        <div class="b-round">
+          <div class="b-round-title">Final<br><span style="font-size:9px;color:var(--muted)">1:40–1:55</span></div>
+          <div class="b-matches">
+            ${bracketMatchHtml('FINAL', '🏆 FINAL', 'C1', '1:40', getKnockoutWinner('SF1'), getKnockoutWinner('SF2'), 'SF1 Winner', 'SF2 Winner', true)}
+          </div>
+        </div>
+      </div>
+    </div>
+    ${luckyLoserInfo}
+    ${finalWinner ? `
+      <div class="champ-box" style="margin-top:24px">
+        <div class="champ-trophy">🏆</div>
+        <div class="champ-lbl">Force Majeure Open 2026 Champions</div>
+        <div class="champ-name">${escapeHtml(teamDisplay(finalWinner.pair.id).hasName ? teamDisplay(finalWinner.pair.id).name : teamDisplay(finalWinner.pair.id).players)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">${escapeHtml(teamDisplay(finalWinner.pair.id).players)}</div>
+      </div>` : ''}
+    <hr class="divider">
+    <div class="section-label">3rd Place Match</div>
+    <div style="max-width:360px">
+      ${bracketMatchHtml('THIRD', '3rd Place', 'C2', '1:40', getKnockoutLoser('SF1'), getKnockoutLoser('SF2'), 'SF1 Loser', 'SF2 Loser')}
+    </div>`;
+
+  el.innerHTML = html;
 }
+
+// Alias used elsewhere in the codebase
+function syncBracket() { renderBracket(); }
 
 // ══════════════════════════════════════════════════════════════
 // RENDER: TEAM NAMES
@@ -1394,6 +1668,22 @@ document.addEventListener('click', (e) => {
     editScore(editBtn.dataset.editKey);
     return;
   }
+
+  // Submit knockout score
+  const koSubmitBtn = closestWithAttr('data-ko-submit');
+  if (koSubmitBtn) {
+    submitKnockoutScore(koSubmitBtn.dataset.koSubmit);
+    return;
+  }
+
+  // Edit knockout score
+  const koEditBtn = closestWithAttr('data-ko-edit');
+  if (koEditBtn) {
+    if (confirm('Edit this result? Any downstream matches will be cleared.')) {
+      editKnockoutScore(koEditBtn.dataset.koEdit);
+    }
+    return;
+  }
 });
 
 document.addEventListener('input', (e) => {
@@ -1426,7 +1716,7 @@ document.addEventListener('keydown', (e) => {
     // Find the submit button within the same match card and click it
     const card = e.target.closest('.match-card');
     if (card) {
-      const btn = card.querySelector('[data-submit="1"]');
+      const btn = card.querySelector('[data-submit="1"], [data-ko-submit]');
       if (btn) btn.click();
     }
   }
