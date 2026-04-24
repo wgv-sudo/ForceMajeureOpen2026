@@ -286,6 +286,14 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
   <div class="page-sub">Manage participants, ratings, and pair assignments</div>
 
   <div class="admin-section">
+    <div class="admin-section-title">🏗️ Tournament Structure</div>
+    <div class="note">Structure is auto-selected based on the number of active teams. Deactivate or add players to change it.</div>
+    <div id="scenario-info"></div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="admin-section">
     <div class="admin-section-title">
       👥 Participants &amp; Skill Ratings
       <button class="btn btn-sm btn-ghost" id="btn-add-player">+ Add Player</button>
@@ -302,7 +310,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 
   <div class="admin-section">
     <div class="admin-section-title">🎾 Pair Assignments &amp; Groups</div>
-    <div class="note">Reassign players or move pairs between groups. A/B = Inside, C/D = Outside. Leo + Ville pair is locked.</div>
+    <div class="note">Reassign players or move pairs between groups. Leo + Ville pair is locked to Group A.</div>
     <div id="admin-pairs"></div>
     <div style="margin-top:12px">
       <button class="btn btn-sm btn-success" id="btn-save-pairs">💾 Save Pair Assignments</button>
@@ -341,8 +349,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 // ══════════════════════════════════════════════════════════════
 const ADMIN_PIN = '2026';
 const SLOT_TIMES = ['0:00–0:15', '0:20–0:35', '0:40–0:55'];
-const STORAGE_KEY = 'fm_open_2026_state_v2';
-const FEED_KEY = 'fm_open_2026_feed_v2';
+const STORAGE_KEY = 'fm_open_2026_state_v3';
+const FEED_KEY = 'fm_open_2026_feed_v3';
 
 const DEFAULT_PLAYERS = [
   {name:'Leo Hynninen', skill:3.0, active:true},
@@ -377,48 +385,102 @@ const DEFAULT_PLAYERS = [
   {name:'Julia Liimatainen', skill:1.5, active:false},
 ];
 
-// Schedule templates by group size
-// r = round/slot, h/a = indices of pairs in the group
+// Schedule templates — FULL ROUND-ROBIN (each pair plays everyone else in their group)
+// r = round/slot within the group, h/a = indices of pairs in the group
 const MATCH_TEMPLATES = {
-  // 4 pairs, 3 slots, 1 court per slot: each pair plays 1-2 matches
-  4: [{r:1,h:0,a:1}, {r:2,h:2,a:3}, {r:3,h:0,a:2}],
-  // 3 pairs, 3 slots, 1 court per slot: full round-robin, everyone plays 2
-  3: [{r:1,h:0,a:1}, {r:2,h:0,a:2}, {r:3,h:1,a:2}],
-  // 7 pairs, 3 slots, 3 courts per slot = 9 matches
-  // Each pair plays 2-3 matches; one pair rests per slot
-  7: [
-    {r:1,h:0,a:6}, {r:1,h:1,a:5}, {r:1,h:2,a:4},
-    {r:2,h:3,a:6}, {r:2,h:0,a:5}, {r:2,h:1,a:4},
-    {r:3,h:2,a:3}, {r:3,h:0,a:4}, {r:3,h:1,a:6},
+  // 3 teams, full round-robin on 1 court, 3 rounds, each pair plays 2 matches
+  3: [
+    {r:1, h:0, a:1}, // round 1: 0 vs 1 (2 rests)
+    {r:2, h:0, a:2}, // round 2: 0 vs 2 (1 rests)
+    {r:3, h:1, a:2}, // round 3: 1 vs 2 (0 rests)
   ],
-  // 8 pairs, 3 slots, 3 courts per slot = 9 matches
-  // Each pair plays 2-3 matches; opponents are varied
-  8: [
-    {r:1,h:0,a:7}, {r:1,h:1,a:6}, {r:1,h:2,a:5},
-    {r:2,h:3,a:4}, {r:2,h:0,a:5}, {r:2,h:1,a:7},
-    {r:3,h:2,a:6}, {r:3,h:3,a:5}, {r:3,h:0,a:4},
-  ],
-  // 5 pairs, 3 slots, 2 courts per slot = 6 matches
-  // Each pair plays 2-3 matches
-  5: [
-    {r:1,h:0,a:4}, {r:1,h:1,a:3},
-    {r:2,h:2,a:4}, {r:2,h:0,a:3},
-    {r:3,h:1,a:4}, {r:3,h:2,a:3},
-  ],
-  // 6 pairs, 3 slots, 2 courts per slot = 6 matches
-  // Each pair plays 2 matches; opponents are varied
-  6: [
-    {r:1,h:0,a:5}, {r:1,h:1,a:4},
-    {r:2,h:2,a:3}, {r:2,h:0,a:4},
-    {r:3,h:1,a:5}, {r:3,h:2,a:3}, // slight repeat, alternative below
+  // 4 teams, full round-robin on 2 courts, 3 rounds (2 matches per round in parallel)
+  // Each pair plays 3 matches, everyone plays every round
+  4: [
+    {r:1, h:0, a:1}, {r:1, h:2, a:3},
+    {r:2, h:0, a:2}, {r:2, h:1, a:3},
+    {r:3, h:0, a:3}, {r:3, h:1, a:2},
   ],
 };
-// Fix 6-pair template: avoid repeats
-MATCH_TEMPLATES[6] = [
-  {r:1,h:0,a:5}, {r:1,h:1,a:4},
-  {r:2,h:2,a:3}, {r:2,h:0,a:4},
-  {r:3,h:1,a:3}, {r:3,h:2,a:5},
-];
+
+// ══════════════════════════════════════════════════════════════
+// SCENARIO DEFINITIONS — auto-selected by active pair count
+// ══════════════════════════════════════════════════════════════
+// Each scenario describes group sizes and court assignments.
+// Groups use keys A, B, C, D. The "court" list tells schedule
+// renderer which physical court(s) each group uses.
+// "confType" = 'indoor' | 'outdoor' for color coding.
+const SCENARIOS = {
+  // Scenario 1: 13 teams → groups of 3-3-4-3
+  // Matches spec: "Scenario 1 = 12 teams" in the original brief, but 3+3+4+3 = 13.
+  // We use this as the default when there are 13 active pairs.
+  13: {
+    id: 'S1',
+    name: 'Scenario 1 (13 teams)',
+    totalPairs: 13,
+    groups: {
+      A: { size: 3, courts: ['Outdoor Field 1'], confType: 'outdoor' },
+      B: { size: 3, courts: ['Outdoor Field 2'], confType: 'outdoor' },
+      C: { size: 4, courts: ['Indoor Field 1', 'Indoor Field 2'], confType: 'indoor' },
+      D: { size: 3, courts: ['Indoor Field 3'], confType: 'indoor' },
+    },
+    groupOrder: ['A','B','C','D'],
+  },
+  // Scenario 1-alt: 12 teams → 3-3-3-3 (same layout, C becomes 3)
+  12: {
+    id: 'S1-12',
+    name: '12 teams (all groups of 3)',
+    totalPairs: 12,
+    groups: {
+      A: { size: 3, courts: ['Outdoor Field 1'], confType: 'outdoor' },
+      B: { size: 3, courts: ['Outdoor Field 2'], confType: 'outdoor' },
+      C: { size: 3, courts: ['Indoor Field 1'], confType: 'indoor' },
+      D: { size: 3, courts: ['Indoor Field 3'], confType: 'indoor' },
+    },
+    groupOrder: ['A','B','C','D'],
+  },
+  // Scenario 2: 11 teams → 4-4-3
+  11: {
+    id: 'S2',
+    name: 'Scenario 2 (11 teams)',
+    totalPairs: 11,
+    groups: {
+      A: { size: 4, courts: ['Outdoor Field 1', 'Outdoor Field 2'], confType: 'outdoor' },
+      B: { size: 4, courts: ['Indoor Field 1', 'Indoor Field 2'], confType: 'indoor' },
+      C: { size: 3, courts: ['Indoor Field 3'], confType: 'indoor' },
+    },
+    groupOrder: ['A','B','C'],
+  },
+  // Scenario 3: 10 teams → 4-3-3
+  10: {
+    id: 'S3',
+    name: 'Scenario 3 (10 teams)',
+    totalPairs: 10,
+    groups: {
+      A: { size: 4, courts: ['Outdoor Field 1', 'Outdoor Field 2'], confType: 'outdoor' },
+      B: { size: 3, courts: ['Indoor Field 1'], confType: 'indoor' },
+      C: { size: 3, courts: ['Indoor Field 3'], confType: 'indoor' },
+    },
+    groupOrder: ['A','B','C'],
+  },
+  // Scenario 4: 9 teams → 3-3-3 (match length 20 min instead of 15)
+  9: {
+    id: 'S4',
+    name: 'Scenario 4 (9 teams)',
+    totalPairs: 9,
+    groups: {
+      A: { size: 3, courts: ['Outdoor Field 1'], confType: 'outdoor' },
+      B: { size: 3, courts: ['Outdoor Field 2'], confType: 'outdoor' },
+      C: { size: 3, courts: ['Indoor Field 1'], confType: 'indoor' },
+    },
+    groupOrder: ['A','B','C'],
+  },
+};
+
+function getScenario() {
+  const activePairCount = STATE?.pairs?.length || 0;
+  return SCENARIOS[activePairCount] || SCENARIOS[13]; // fallback to default
+}
 
 // ══════════════════════════════════════════════════════════════
 // STATE
@@ -433,14 +495,18 @@ function loadState() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && parsed.players && parsed.pairs && parsed.groups) {
-        // Force 2groups structure — 4groups is no longer supported
-        if (parsed.structure !== '2groups' || !parsed.groups.I || !parsed.groups.O) {
-          parsed.structure = '2groups';
+        // Migrate any old structure to scenario-based layout
+        const scenario = SCENARIOS[parsed.pairs.length];
+        const hasOldKeys = parsed.groups.I || parsed.groups.O;
+        const scenarioKeys = scenario ? scenario.groupOrder : ['A','B','C','D'];
+        const hasRequiredKeys = scenarioKeys.every(k => parsed.groups[k]);
+        if (hasOldKeys || !hasRequiredKeys) {
           parsed.pairs = buildPairs(parsed.players);
-          parsed.groups = assignGroups(parsed.pairs, parsed.players, '2groups');
+          parsed.groups = assignGroups(parsed.pairs, parsed.players);
           parsed.scores = {};
           parsed.teamNames = {};
         }
+        delete parsed.structure; // no longer used
         return parsed;
       }
     }
@@ -473,9 +539,8 @@ function saveStateLocal() {
 function buildDefaultState() {
   const players = JSON.parse(JSON.stringify(DEFAULT_PLAYERS));
   const pairs = buildPairs(players);
-  const structure = '2groups';
-  const groups = assignGroups(pairs, players, structure);
-  return { players, pairs, groups, structure, scores: {}, teamNames: {} };
+  const groups = assignGroups(pairs, players);
+  return { players, pairs, groups, scores: {}, teamNames: {} };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -489,7 +554,7 @@ const FIREBASE_CONFIG = {
 };
 
 // Path in Firebase where the entire tournament state lives
-const FIREBASE_PATH = 'tournament/v2';
+const FIREBASE_PATH = 'tournament/v3';
 
 let fbDB = null;
 let fbEnabled = false;
@@ -580,8 +645,7 @@ function applyRemoteState(data) {
   STATE = {
     players: data.players || [],
     pairs: data.pairs || [],
-    groups: data.groups || { I: [], O: [] },
-    structure: data.structure || '2groups',
+    groups: data.groups || {},
     scores: data.scores || {},
     teamNames: data.teamNames || {},
   };
@@ -654,53 +718,58 @@ function buildPairs(players) {
   return pairs;
 }
 
-function assignGroups(pairs, players, structure = '4groups') {
+function assignGroups(pairs, players, _unused) {
   const getSkill = (name) => {
     const p = players.find(pl => pl.name === name);
     return p ? p.skill : 1.5;
   };
   const pairAvgFn = (pair) => (getSkill(pair.p1) + getSkill(pair.p2)) / 2;
-  const locked = pairs.find(p => p.locked);
-  const rest = pairs.filter(p => !p.locked).sort((a,b) => pairAvgFn(b) - pairAvgFn(a));
 
-  if (structure === '2groups') {
-    // Split pairs between Inside (3 courts) and Outside (2 courts)
-    // Try to match the court-capacity ratio (60/40) with hard caps: max 8 indoor, max 6 outdoor
-    // Locked pair always goes indoor
-    const totalPairs = pairs.length;
-    // Aim for ceil(3/5 * total) indoor, clamped to [3, 8]
-    let insideTotal = Math.min(8, Math.max(3, Math.ceil(totalPairs * 0.6)));
-    // But outdoor can't exceed 6
-    if (totalPairs - insideTotal > 6) insideTotal = totalPairs - 6;
-    const insideCount = locked ? insideTotal - 1 : insideTotal;
-    const insidePool = rest.slice(0, insideCount);
-    const outsidePool = rest.slice(insideCount);
-    const I = [], O = [];
-    if (locked) { locked.group = 'I'; I.push(locked.id); }
-    insidePool.forEach(p => { p.group = 'I'; I.push(p.id); });
-    outsidePool.forEach(p => { p.group = 'O'; O.push(p.id); });
-    return { I, O };
+  // Select scenario based on pair count
+  const totalPairs = pairs.length;
+  const scenario = SCENARIOS[totalPairs] || SCENARIOS[13];
+  const groupOrder = scenario.groupOrder;
+
+  // Initialize empty groups
+  const groups = {};
+  groupOrder.forEach(g => { groups[g] = []; });
+
+  // Locked pair (Leo+Ville) always goes into Group A first
+  const locked = pairs.find(p => p.locked);
+  const rest = pairs.filter(p => !p.locked).sort((a, b) => pairAvgFn(b) - pairAvgFn(a));
+
+  if (locked && scenario.groups.A) {
+    locked.group = 'A';
+    groups.A.push(locked.id);
   }
 
-  // Default: 4 groups (A/B inside, C/D outside)
-  const insideCount = locked ? 7 : 8;
-  const insidePool = rest.slice(0, insideCount);
-  const outsidePool = rest.slice(insideCount);
-  const A = [], B = [], C = [], D = [];
-  if (locked) { locked.group = 'A'; A.push(locked.id); }
-  insidePool.forEach((p, i) => {
-    const target = locked
-      ? (i % 2 === 0 ? 'B' : 'A')
-      : (i % 2 === 0 ? 'A' : 'B');
-    p.group = target;
-    (target === 'A' ? A : B).push(p.id);
+  // Snake draft remaining pairs across groups in scenario order to balance skill
+  // Each group has a target size; fill until each reaches its target
+  const groupSizes = {};
+  groupOrder.forEach(g => {
+    groupSizes[g] = scenario.groups[g].size;
   });
-  outsidePool.forEach((p, i) => {
-    const target = i % 2 === 0 ? 'C' : 'D';
-    p.group = target;
-    (target === 'C' ? C : D).push(p.id);
-  });
-  return { A, B, C, D };
+
+  // Decide draft order. Snake draft: forward, backward, forward, ...
+  // Use ordering that balances skill.
+  let direction = 1;
+  let round = 0;
+  let poolIdx = 0;
+  while (poolIdx < rest.length) {
+    const order = direction > 0 ? groupOrder : [...groupOrder].reverse();
+    for (const g of order) {
+      if (poolIdx >= rest.length) break;
+      if (groups[g].length >= groupSizes[g]) continue;
+      const pair = rest[poolIdx++];
+      pair.group = g;
+      groups[g].push(pair.id);
+    }
+    direction *= -1;
+    round++;
+    if (round > 100) break; // safety
+  }
+
+  return groups;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -736,26 +805,26 @@ function getScore(g, idx) {
   return STATE.scores[k] || {h:'', a:''};
 }
 function groupKeys() {
-  return Object.keys(STATE.groups);
+  const scenario = getScenario();
+  return scenario.groupOrder.filter(g => STATE.groups[g] && STATE.groups[g].length > 0);
 }
-function isInsideGroup(g) {
-  return STATE.structure === '2groups' ? g === 'I' : ['A','B'].includes(g);
+function groupConf(g) {
+  const scenario = getScenario();
+  return scenario.groups[g]?.confType || 'indoor';
 }
-function confColor(g) { return isInsideGroup(g) ? 'var(--in)' : 'var(--out)'; }
-function confLabel(g) { return isInsideGroup(g) ? 'Inside' : 'Outside'; }
-function confBadgeCls(g) { return isInsideGroup(g) ? 'b-in' : 'b-out'; }
-function groupDisplayName(g) {
-  if (STATE.structure === '2groups') {
-    return g === 'I' ? 'Inside Group' : 'Outside Group';
-  }
-  return `Group ${g}`;
-}
+function isIndoorGroup(g) { return groupConf(g) === 'indoor'; }
+function isOutdoorGroup(g) { return groupConf(g) === 'outdoor'; }
+function confColor(g) { return isIndoorGroup(g) ? 'var(--in)' : 'var(--out)'; }
+function confLabel(g) { return isIndoorGroup(g) ? 'Indoor' : 'Outdoor'; }
+function confBadgeCls(g) { return isIndoorGroup(g) ? 'b-in' : 'b-out'; }
+function groupDisplayName(g) { return `Group ${g}`; }
+
+// Court assignment for a given group and match index within a slot
 function courtFor(g, slot, matchIdxInSlot = 0) {
-  if (STATE.structure === '2groups') {
-    if (g === 'I') return `Court ${1 + matchIdxInSlot}`; // courts 1,2,3
-    if (g === 'O') return `Court ${4 + matchIdxInSlot}`; // courts 4,5
-  }
-  return {A:'Court 1', B:'Court 2', C:'Court 4', D:'Court 5'}[g] || '—';
+  const scenario = getScenario();
+  const courts = scenario.groups[g]?.courts || [];
+  if (courts.length === 0) return '—';
+  return courts[matchIdxInSlot % courts.length];
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -789,63 +858,101 @@ function computeStandings(g) {
 // Quarter-finals: I-1 vs O-2, I-2 vs O-1, I-3 vs I-4
 // Winners advance to SFs; among 3 QF losers, the one with highest
 // normalised group points advances as a "lucky loser"
-// Normalised points = pts / (2 * games_played_in_group_stage)
-
-function getMaxPossiblePts(g) {
-  // 2 points per match, each pair plays some fraction of total matches
-  // Use the group's match count × 2 as the upper bound for a single pair's pts
-  // Actually: per pair, max pts = 2 × (games they play)
-  const sch = getScheduleForGroup(g);
-  // Per pair, count matches where they appear as h or a
-  return sch;
+// Point differential (GF - GA) for a stats entry — used as margin tiebreaker
+function pairMargin(statsEntry) {
+  return (statsEntry.gf || 0) - (statsEntry.ga || 0);
 }
 
-function normalisedPts(statsEntry, g) {
-  const sch = getScheduleForGroup(g);
-  const pairIdx = getPairsForGroup(g).findIndex(p => p.id === statsEntry.pair.id);
-  if (pairIdx < 0) return 0;
-  const gamesPlayed = sch.filter(m => m.h === pairIdx || m.a === pairIdx).length;
-  if (gamesPlayed === 0) return 0;
-  return statsEntry.pts / (gamesPlayed * 2);
-}
-
-// Get the 6 teams that qualify (by group rank); returns array of {pair, seed, g, rank, pts, norm}
+// Get qualifiers for knockout stage.
+// Rule: 1st from each group always advances. If one group has 4 teams,
+// its 2nd place auto-advances. The remaining qualifier(s) to fill 6 slots
+// come from best 2nd-place teams among the 3-team groups, by combined margin.
 function getQualifiers() {
+  const scenario = getScenario();
+  const groupOrder = scenario.groupOrder;
+
+  // Compute standings for each group
+  const standings = {};
+  groupOrder.forEach(g => { standings[g] = computeStandings(g); });
+
+  // Categorize groups by size
+  const fourTeamGroups = groupOrder.filter(g => scenario.groups[g].size === 4);
+  const threeTeamGroups = groupOrder.filter(g => scenario.groups[g].size === 3);
+
   const quals = [];
-  const stI = computeStandings('I');
-  const stO = computeStandings('O');
-  // Inside top 4
-  for (let i = 0; i < 4 && i < stI.length; i++) {
-    quals.push({
-      pair: stI[i].pair, g: 'I', rank: i + 1,
-      pts: stI[i].pts, norm: normalisedPts(stI[i], 'I'),
-      label: `I-${i+1}`
-    });
+
+  // 1st place from every group
+  groupOrder.forEach(g => {
+    if (standings[g][0]) {
+      quals.push({
+        pair: standings[g][0].pair,
+        g, rank: 1,
+        pts: standings[g][0].pts,
+        margin: pairMargin(standings[g][0]),
+        label: `${g}-1`
+      });
+    }
+  });
+
+  // 2nd from each 4-team group (auto-qualify)
+  fourTeamGroups.forEach(g => {
+    if (standings[g][1]) {
+      quals.push({
+        pair: standings[g][1].pair,
+        g, rank: 2,
+        pts: standings[g][1].pts,
+        margin: pairMargin(standings[g][1]),
+        label: `${g}-2`
+      });
+    }
+  });
+
+  // Need 6 qualifiers total. Fill remaining slots from best 2nd-placed teams
+  // in 3-team groups, ranked by margin (ties broken by pts, then group order).
+  const slotsLeft = 6 - quals.length;
+  if (slotsLeft > 0) {
+    const seconds = threeTeamGroups
+      .map(g => {
+        if (!standings[g][1]) return null;
+        return {
+          pair: standings[g][1].pair,
+          g, rank: 2,
+          pts: standings[g][1].pts,
+          margin: pairMargin(standings[g][1]),
+          label: `${g}-2`
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.margin - a.margin || b.pts - a.pts || groupOrder.indexOf(a.g) - groupOrder.indexOf(b.g));
+
+    for (let i = 0; i < slotsLeft && i < seconds.length; i++) {
+      quals.push(seconds[i]);
+    }
   }
-  // Outside top 2
-  for (let i = 0; i < 2 && i < stO.length; i++) {
-    quals.push({
-      pair: stO[i].pair, g: 'O', rank: i + 1,
-      pts: stO[i].pts, norm: normalisedPts(stO[i], 'O'),
-      label: `O-${i+1}`
-    });
-  }
+
   return quals;
 }
 
-// QF seeding: 1v6, 2v5, 3v4 in the 6-team format
-// With our qualifiers [I-1, I-2, I-3, I-4, O-1, O-2], seeds are:
-//   seed1 = I-1, seed2 = I-2, seed3 = I-3, seed4 = I-4, seed5 = O-1, seed6 = O-2
-// So QF1 = I-1 vs O-2, QF2 = I-2 vs O-1, QF3 = I-3 vs I-4
+// Sort qualifiers into seeded order (seed 1 = strongest).
+// Winners of groups get higher seeds. Among group winners, order by
+// margin desc; among 2nd-place qualifiers, order by margin desc.
+function getSeededQualifiers() {
+  const quals = getQualifiers();
+  const winners = quals.filter(q => q.rank === 1).sort((a, b) => b.margin - a.margin || b.pts - a.pts);
+  const seconds = quals.filter(q => q.rank === 2).sort((a, b) => b.margin - a.margin || b.pts - a.pts);
+  return [...winners, ...seconds]; // seeds 1..N
+}
+
+// QF seeding: 1v6, 2v5, 3v4 (standard 6-team bracket)
 const QF_PAIRINGS = [
-  { id: 'QF1', homeSeed: 0, awaySeed: 5 }, // I-1 vs O-2
-  { id: 'QF2', homeSeed: 1, awaySeed: 4 }, // I-2 vs O-1
-  { id: 'QF3', homeSeed: 2, awaySeed: 3 }, // I-3 vs I-4
+  { id: 'QF1', homeSeed: 0, awaySeed: 5 }, // 1 vs 6
+  { id: 'QF2', homeSeed: 1, awaySeed: 4 }, // 2 vs 5
+  { id: 'QF3', homeSeed: 2, awaySeed: 3 }, // 3 vs 4
 ];
 
 // Return the home/away qualifier for a given QF id
 function getQFTeams(qfId) {
-  const quals = getQualifiers();
+  const quals = getSeededQualifiers();
   if (quals.length < 6) return { home: null, away: null };
   const p = QF_PAIRINGS.find(x => x.id === qfId);
   if (!p) return { home: null, away: null };
@@ -876,21 +983,34 @@ function getQFLoser(qfId) {
 }
 
 // Return the 4 SF teams (3 QF winners + 1 lucky loser), or null entries if QFs not done
-// Lucky loser = QF loser with highest normalised group-stage pts
+// Lucky loser = QF loser with best group-stage margin
+// Tiebreaker: group-stage margin + knockout-stage margin
 function getSFTeams() {
   const w1 = getQFWinner('QF1');
   const w2 = getQFWinner('QF2');
   const w3 = getQFWinner('QF3');
-  const losers = ['QF1','QF2','QF3'].map(id => getQFLoser(id)).filter(Boolean);
+  const losers = ['QF1','QF2','QF3'].map(id => {
+    const loser = getQFLoser(id);
+    if (!loser) return null;
+    // Compute knockout margin from this QF
+    const sv = STATE.scores[id];
+    const h = parseInt(sv.h, 10), a = parseInt(sv.a, 10);
+    const { home } = getQFTeams(id);
+    const isHome = home && home.pair.id === loser.pair.id;
+    const koMargin = isHome ? (h - a) : (a - h); // negative since they lost
+    return { ...loser, koMargin };
+  }).filter(Boolean);
+
   let luckyLoser = null;
   if (losers.length === 3) {
-    // Pick highest normalised pts (tie-break by raw pts, then rank)
     luckyLoser = [...losers].sort((a, b) =>
-      b.norm - a.norm || b.pts - a.pts || a.rank - b.rank
+      b.margin - a.margin ||
+      (b.margin + b.koMargin) - (a.margin + a.koMargin) ||
+      b.pts - a.pts ||
+      a.rank - b.rank
     )[0];
   }
-  // SF seeding: place QF1 winner vs lucky loser on one side, QF2 vs QF3 winners on the other
-  // This gives: SF1 = QF1-W vs LL, SF2 = QF2-W vs QF3-W
+  // SF seeding: QF1 winner vs lucky loser on one side; QF2 vs QF3 winners on the other
   return {
     sf1Home: w1,
     sf1Away: luckyLoser,
@@ -979,7 +1099,12 @@ function renderLive() {
 // ══════════════════════════════════════════════════════════════
 function renderGroups() {
   const el = document.getElementById('groups-layout');
+  const scenario = getScenario();
   let html = '';
+
+  // Determine auto-qualifying 2nd-place qualifiers (for 4-team groups and best of 3-team groups)
+  const qualIds = new Set(getQualifiers().map(q => q.pair.id));
+
   groupKeys().forEach(g => {
     const st = computeStandings(g);
     const sch = getScheduleForGroup(g);
@@ -987,8 +1112,6 @@ function renderGroups() {
       const sv = getScore(g, i);
       return sv.h !== '' && sv.a !== '';
     }).length;
-    // Inside: top 4 qualify for QFs. Outside: top 2 qualify for QFs.
-    const advanceCount = g === 'I' ? 4 : 2;
 
     html += `<div>
       <div class="card">
@@ -996,15 +1119,18 @@ function renderGroups() {
           <div style="display:flex;align-items:center;gap:8px">
             <div class="card-title">${groupDisplayName(g)}</div>
             <span class="badge ${confBadgeCls(g)}">${confLabel(g)}</span>
+            <span style="font-size:10px;color:var(--muted)">${scenario.groups[g]?.size || st.length} teams</span>
           </div>
           <div style="font-size:11px;color:var(--muted)">${playedCount}/${sch.length} played</div>
         </div>
         <table class="stand-table">
-          <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Pts</th></tr></thead>
+          <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Pts</th><th title="Point differential (margin)">±</th></tr></thead>
           <tbody>`;
     st.forEach((s, i) => {
       const td = teamDisplay(s.pair.id);
-      const advances = i < advanceCount;
+      const advances = qualIds.has(s.pair.id);
+      const diff = (s.gf || 0) - (s.ga || 0);
+      const diffStr = (diff > 0 ? '+' : '') + diff;
       html += `<tr class="${advances?'leader':''}">
         <td class="s-rank ${advances?'r1':''}">${advances?'▶':i+1}</td>
         <td>
@@ -1013,10 +1139,11 @@ function renderGroups() {
         </td>
         <td>${s.w}</td><td>${s.l}</td>
         <td class="s-pts">${s.pts}</td>
+        <td style="color:var(--muted);font-variant-numeric:tabular-nums">${diffStr}</td>
       </tr>`;
     });
     if (st.length === 0) {
-      html += `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">No teams in this group</td></tr>`;
+      html += `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">No teams in this group</td></tr>`;
     }
     html += `</tbody></table></div></div>`;
   });
@@ -1027,10 +1154,18 @@ function renderGroups() {
 // RENDER: SCHEDULE
 // ══════════════════════════════════════════════════════════════
 function renderSchedule() {
-  let html = `<div class="hour-banner"><div class="hour-big" style="color:var(--in)">HOUR 1</div><div class="hour-desc">Group Stage · 3 × 15-min slots</div><hr class="divline"></div>`;
+  const scenario = getScenario();
+  const slotMinutes = scenario.id === 'S4' ? 20 : 15;
+  const totalGroupMatches = groupKeys().reduce((sum, g) => sum + getScheduleForGroup(g).length, 0);
+  let html = `<div class="hour-banner">
+    <div class="hour-big" style="color:var(--in)">HOUR 1 · GROUP STAGE</div>
+    <div class="hour-desc">${scenario.name} · 3 slots × ${slotMinutes} min · ${totalGroupMatches} matches · full round-robin per group</div>
+    <hr class="divline">
+  </div>`;
 
   for (let slot = 1; slot <= 3; slot++) {
-    html += `<div class="slot-head"><div class="slot-title">Slot ${slot}</div><div class="slot-time">${SLOT_TIMES[slot-1]}</div></div>
+    const slotTime = slotMinutes === 20 ? ['0:00–0:20','0:20–0:40','0:40–1:00'][slot-1] : SLOT_TIMES[slot-1];
+    html += `<div class="slot-head"><div class="slot-title">Slot ${slot}</div><div class="slot-time">${slotTime}</div></div>
     <div class="matches-grid">`;
 
     // Track total courts used this slot to detect free indoor court in 4groups mode
@@ -1041,7 +1176,7 @@ function renderSchedule() {
       const matchesThisSlot = sch.filter(x => x.r === slot);
       if (matchesThisSlot.length === 0) return;
       const pairs = getPairsForGroup(g);
-      if (isInsideGroup(g)) indoorMatchesThisSlot += matchesThisSlot.length;
+      if (isIndoorGroup(g)) indoorMatchesThisSlot += matchesThisSlot.length;
 
       matchesThisSlot.forEach((m, matchIdxInSlot) => {
         if (!pairs[m.h] || !pairs[m.a]) return;
@@ -1054,7 +1189,7 @@ function renderSchedule() {
         const hWin = !isNaN(h) && !isNaN(a) && h > a;
         const aWin = !isNaN(h) && !isNaN(a) && a > h;
         const court = courtFor(g, slot, matchIdxInSlot);
-        const groupTag = STATE.structure === '2groups' ? confLabel(g) : `Group ${g}`;
+        const groupTag = `Group ${g}`;
 
         const submitted = sv.h !== '' && sv.a !== '' && !isNaN(h) && !isNaN(a);
         const btnHtml = submitted
@@ -1064,7 +1199,7 @@ function renderSchedule() {
         html += `<div class="match-card ${submitted?'match-submitted':''}" id="mc-${key}">
           <div class="match-card-head">
             <span class="court-tag" style="color:${confColor(g)}">${court} · ${groupTag}</span>
-            <span class="time-tag">${SLOT_TIMES[slot-1]}</span>
+            <span class="time-tag">${slotTime}</span>
           </div>
           <div class="match-body">
             <div class="match-team-row">
@@ -1072,7 +1207,7 @@ function renderSchedule() {
                 <div class="tname ${tdH.hasName?'':'unnamed'}">${escapeHtml(tdH.name)}</div>
                 <div class="tplayers">${escapeHtml(tdH.players)}</div>
               </div>
-              <input type="number" min="0" max="99" class="score-in ${hWin?'win':''}" 
+              <input type="number" min="0" max="3" class="score-in ${hWin?'win':''}" 
                 id="${key}-h"
                 data-group="${g}" data-idx="${idx}" data-side="h" 
                 data-home="${home.id}" data-away="${away.id}"
@@ -1084,7 +1219,7 @@ function renderSchedule() {
                 <div class="tname ${tdA.hasName?'':'unnamed'}">${escapeHtml(tdA.name)}</div>
                 <div class="tplayers">${escapeHtml(tdA.players)}</div>
               </div>
-              <input type="number" min="0" max="99" class="score-in ${aWin?'win':''}" 
+              <input type="number" min="0" max="3" class="score-in ${aWin?'win':''}" 
                 id="${key}-a"
                 data-group="${g}" data-idx="${idx}" data-side="a"
                 data-home="${home.id}" data-away="${away.id}"
@@ -1098,10 +1233,6 @@ function renderSchedule() {
       });
     });
 
-    // Show free court notice if indoor courts aren't fully used (4groups mode)
-    if (STATE.structure === '4groups' && indoorMatchesThisSlot < 3 && slot <= 2) {
-      html += `<div class="free-slot">🏢 <span><b>Court 3</b> — Available for warm-up</span></div>`;
-    }
     html += `</div>`;
   }
 
@@ -1118,19 +1249,19 @@ function renderSchedule() {
   html += `<div class="hour-banner"><div class="hour-big" style="color:var(--kno)">HOUR 2</div><div class="hour-desc">Knockouts · Quarter-Finals → Semi-Finals → Final</div><hr class="divline"></div>
   <div class="slot-head"><div class="slot-title">Slot 4 · Quarter-Finals</div><div class="slot-time">1:00–1:15</div></div>
   <div class="matches-grid">
-    ${renderKnockoutCard('QF1', 'Court 1', '1:00–1:15', qf1h, qf1a, 'QF1')}
-    ${renderKnockoutCard('QF2', 'Court 2', '1:00–1:15', qf2h, qf2a, 'QF2')}
-    ${renderKnockoutCard('QF3', 'Court 3', '1:00–1:15', qf3h, qf3a, 'QF3')}
+    ${renderKnockoutCard('QF1', 'Indoor Field 1', '1:00–1:15', qf1h, qf1a, 'QF1')}
+    ${renderKnockoutCard('QF2', 'Indoor Field 2', '1:00–1:15', qf2h, qf2a, 'QF2')}
+    ${renderKnockoutCard('QF3', 'Indoor Field 3', '1:00–1:15', qf3h, qf3a, 'QF3')}
   </div>
   <div class="slot-head"><div class="slot-title">Slot 5 · Semi-Finals</div><div class="slot-time">1:20–1:35</div></div>
   <div class="matches-grid">
-    ${renderKnockoutCard('SF1', 'Court 1', '1:20–1:35', sf.sf1Home, sf.sf1Away, 'SF1', 'QF1 winner vs Lucky Loser')}
-    ${renderKnockoutCard('SF2', 'Court 2', '1:20–1:35', sf.sf2Home, sf.sf2Away, 'SF2', 'QF2 winner vs QF3 winner')}
+    ${renderKnockoutCard('SF1', 'Indoor Field 1', '1:20–1:35', sf.sf1Home, sf.sf1Away, 'SF1', 'QF1 winner vs Lucky Loser')}
+    ${renderKnockoutCard('SF2', 'Indoor Field 2', '1:20–1:35', sf.sf2Home, sf.sf2Away, 'SF2', 'QF2 winner vs QF3 winner')}
   </div>
-  <div class="slot-head"><div class="slot-title">Slot 6 · Final &amp; 3rd Place</div><div class="slot-time">1:40–1:55</div></div>
+  <div class="slot-head"><div class="slot-title">Slot 6 · Final &amp; 3rd Place</div><div class="slot-time">1:40–2:00 (20 min)</div></div>
   <div class="matches-grid">
-    ${renderKnockoutCard('FINAL', 'Court 1', '1:40–1:55', finalH, finalA, '🏆 FINAL', null, true)}
-    ${renderKnockoutCard('THIRD', 'Court 2', '1:40–1:55', thirdH, thirdA, '3rd Place')}
+    ${renderKnockoutCard('FINAL', 'Indoor Field 1', '1:40–2:00', finalH, finalA, '🏆 FINAL', null, true)}
+    ${renderKnockoutCard('THIRD', 'Indoor Field 2', '1:40–2:00', thirdH, thirdA, '3rd Place')}
   </div>`;
 
   document.getElementById('schedule-content').innerHTML = html;
@@ -1154,7 +1285,7 @@ function renderKnockoutCard(matchId, court, time, home, away, title, subtitle, i
         <div class="tplayers">${escapeHtml(td.players)} <span style="color:var(--kno)">· ${team.label}</span></div>`;
       return `<div class="match-team-row">
         <div class="match-team-info">${nameHtml}</div>
-        <input type="number" min="0" max="99" class="score-in ${winClass}" 
+        <input type="number" min="0" max="3" class="score-in ${winClass}" 
           id="${matchId}-${side}"
           value="${escapeHtml(sv[side])}" placeholder="—" ${submitted?'disabled':''} ${!canSubmit?'disabled':''}>
       </div>`;
@@ -1198,9 +1329,9 @@ function renderKnockoutCard(matchId, court, time, home, away, title, subtitle, i
 // Text to show for a knockout slot before teams are decided
 function tbdLabelFor(matchId, side) {
   const map = {
-    'QF1-h':'Inside 1st', 'QF1-a':'Outside 2nd',
-    'QF2-h':'Inside 2nd', 'QF2-a':'Outside 1st',
-    'QF3-h':'Inside 3rd', 'QF3-a':'Inside 4th',
+    'QF1-h':'Seed 1', 'QF1-a':'Seed 6',
+    'QF2-h':'Seed 2', 'QF2-a':'Seed 5',
+    'QF3-h':'Seed 3', 'QF3-a':'Seed 4',
     'SF1-h':'QF1 Winner', 'SF1-a':'Lucky Loser',
     'SF2-h':'QF2 Winner', 'SF2-a':'QF3 Winner',
     'FINAL-h':'SF1 Winner', 'FINAL-a':'SF2 Winner',
@@ -1225,12 +1356,18 @@ function submitScore(g, idx, homeId, awayId) {
     return;
   }
   const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
-  if (isNaN(h) || isNaN(a) || h < 0 || a < 0) {
-    showToast('Invalid score — use numbers only');
+  if (isNaN(h) || isNaN(a) || h < 0 || a < 0 || h > 3 || a > 3) {
+    showToast('Scores must be 0–3 (first to 3)');
     return;
   }
-  if (h === a) {
-    if (!confirm('Scores are tied. Submit as a draw?')) return;
+  // First-to-3: exactly one side must reach 3
+  if (h !== 3 && a !== 3) {
+    showToast('One team must reach 3 points to win');
+    return;
+  }
+  if (h === 3 && a === 3) {
+    showToast('Both teams cannot have 3 — only one winner');
+    return;
   }
 
   // Commit to state
@@ -1241,7 +1378,7 @@ function submitScore(g, idx, homeId, awayId) {
   const tA = teamDisplay(awayId);
   const nameH = tH.hasName ? tH.name : tH.players;
   const nameA = tA.hasName ? tA.name : tA.players;
-  const groupTag = STATE.structure === '2groups' ? confLabel(g) : `Group ${g}`;
+  const groupTag = `Group ${g}`;
   addFeed('🎾', `<b>${escapeHtml(nameH)}</b> ${h} – ${a} <b>${escapeHtml(nameA)}</b> · ${groupTag}`);
 
   saveState();
@@ -1290,8 +1427,12 @@ function submitKnockoutScore(matchId) {
   const hVal = hi.value.trim(), aVal = ai.value.trim();
   if (hVal === '' || aVal === '') { showToast('Please enter both scores'); return; }
   const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
-  if (isNaN(h) || isNaN(a) || h < 0 || a < 0) { showToast('Invalid score'); return; }
-  if (h === a) { showToast('Knockout matches cannot be a draw'); return; }
+  if (isNaN(h) || isNaN(a) || h < 0 || a < 0 || h > 3 || a > 3) {
+    showToast('Scores must be 0–3 (first to 3)');
+    return;
+  }
+  if (h !== 3 && a !== 3) { showToast('One team must reach 3 points'); return; }
+  if (h === 3 && a === 3) { showToast('Only one team can reach 3'); return; }
 
   // Determine teams for feed entry
   let home = null, away = null;
@@ -1411,9 +1552,9 @@ function renderBracket() {
         <div class="b-round">
           <div class="b-round-title">Quarter-Finals<br><span style="font-size:9px;color:var(--muted)">1:00–1:15</span></div>
           <div class="b-matches">
-            ${bracketMatchHtml('QF1', 'QF1', 'C1', '1:00', qf1h, qf1a, 'Inside 1st', 'Outside 2nd')}
-            ${bracketMatchHtml('QF2', 'QF2', 'C2', '1:00', qf2h, qf2a, 'Inside 2nd', 'Outside 1st')}
-            ${bracketMatchHtml('QF3', 'QF3', 'C3', '1:00', qf3h, qf3a, 'Inside 3rd', 'Inside 4th')}
+            ${bracketMatchHtml('QF1', 'QF1', 'IF1', '1:00', qf1h, qf1a, 'Seed 1', 'Seed 6')}
+            ${bracketMatchHtml('QF2', 'QF2', 'IF2', '1:00', qf2h, qf2a, 'Seed 2', 'Seed 5')}
+            ${bracketMatchHtml('QF3', 'QF3', 'IF3', '1:00', qf3h, qf3a, 'Seed 3', 'Seed 4')}
           </div>
         </div>
         <div class="b-conn">
@@ -1422,8 +1563,8 @@ function renderBracket() {
         <div class="b-round">
           <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">1:20–1:35</span></div>
           <div class="b-matches">
-            ${bracketMatchHtml('SF1', 'SF1', 'C1', '1:20', sf.sf1Home, sf.sf1Away, 'QF1 Winner', 'Lucky Loser')}
-            ${bracketMatchHtml('SF2', 'SF2', 'C2', '1:20', sf.sf2Home, sf.sf2Away, 'QF2 Winner', 'QF3 Winner')}
+            ${bracketMatchHtml('SF1', 'SF1', 'IF1', '1:20', sf.sf1Home, sf.sf1Away, 'QF1 Winner', 'Lucky Loser')}
+            ${bracketMatchHtml('SF2', 'SF2', 'IF2', '1:20', sf.sf2Home, sf.sf2Away, 'QF2 Winner', 'QF3 Winner')}
           </div>
         </div>
         <div class="b-conn">
@@ -1432,7 +1573,7 @@ function renderBracket() {
         <div class="b-round">
           <div class="b-round-title">Final<br><span style="font-size:9px;color:var(--muted)">1:40–1:55</span></div>
           <div class="b-matches">
-            ${bracketMatchHtml('FINAL', '🏆 FINAL', 'C1', '1:40', getKnockoutWinner('SF1'), getKnockoutWinner('SF2'), 'SF1 Winner', 'SF2 Winner', true)}
+            ${bracketMatchHtml('FINAL', '🏆 FINAL', 'IF1', '1:40', getKnockoutWinner('SF1'), getKnockoutWinner('SF2'), 'SF1 Winner', 'SF2 Winner', true)}
           </div>
         </div>
       </div>
@@ -1448,7 +1589,7 @@ function renderBracket() {
     <hr class="divider">
     <div class="section-label">3rd Place Match</div>
     <div style="max-width:360px">
-      ${bracketMatchHtml('THIRD', '3rd Place', 'C2', '1:40', getKnockoutLoser('SF1'), getKnockoutLoser('SF2'), 'SF1 Loser', 'SF2 Loser')}
+      ${bracketMatchHtml('THIRD', '3rd Place', 'IF2', '1:40', getKnockoutLoser('SF1'), getKnockoutLoser('SF2'), 'SF1 Loser', 'SF2 Loser')}
     </div>`;
 
   el.innerHTML = html;
@@ -1572,52 +1713,64 @@ function rebuildPairsFromAdmin() {
   if (!confirm('Rebuild pairs? This clears all scores and team names.')) return;
   saveAdminPlayers();
   STATE.pairs = buildPairs(STATE.players);
-  STATE.groups = assignGroups(STATE.pairs, STATE.players, STATE.structure);
+  STATE.groups = assignGroups(STATE.pairs, STATE.players);
   STATE.scores = {};
   STATE.teamNames = {};
   feedLog = [];
   saveState();
   renderAll();
-  showToast('Pairs rebuilt!');
+  const scenario = getScenario();
+  showToast(`Pairs rebuilt! Using ${scenario.name}`);
 }
 
-// ══════════════════════════════════════════════════════════════
-// ADMIN: STRUCTURE TOGGLE
-// ══════════════════════════════════════════════════════════════
-function renderStructureToggle() {
-  const el = document.getElementById('structure-toggle');
+function renderScenarioInfo() {
+  const el = document.getElementById('scenario-info');
   if (!el) return;
-  const active = STATE.structure || '4groups';
-  el.innerHTML = `
-    <div class="structure-option ${active==='4groups'?'active':''}" data-structure="4groups">
-      <div class="structure-option-title">
-        <div class="structure-check"></div>
-        4 Groups
-      </div>
-      <div class="structure-option-desc">Inside: Groups A &amp; B (4 pairs each)<br>Outside: Groups C &amp; D (3 pairs each)<br><b style="color:var(--text)">4 group winners → Semi-finals</b></div>
-    </div>
-    <div class="structure-option ${active==='2groups'?'active':''}" data-structure="2groups">
-      <div class="structure-option-title">
-        <div class="structure-check"></div>
-        2 Groups
-      </div>
-      <div class="structure-option-desc">Inside: One big group (8 pairs, 9 matches)<br>Outside: One big group (6 pairs, 6 matches)<br><b style="color:var(--text)">Top 2 per group → Semi-finals</b></div>
+  const scenario = getScenario();
+  const activePairCount = STATE.pairs.length;
+  const activePlayers = STATE.players.filter(p => p.active).length;
+  const isSupported = !!SCENARIOS[activePairCount];
+
+  let warning = '';
+  if (!isSupported) {
+    warning = `<div style="background:rgba(248,113,113,0.12);color:var(--red);padding:10px 14px;border-radius:6px;font-size:12px;margin-top:12px;border-left:3px solid var(--red)">
+      ⚠️ <b>${activePairCount} teams</b> is outside the supported scenarios (9–13). Falling back to Scenario 1 — some groups may be incorrectly sized. Adjust active players to reach a supported count.
     </div>`;
+  }
+
+  const groupsHtml = scenario.groupOrder.map(g => {
+    const grp = scenario.groups[g];
+    const currentPairs = STATE.groups[g]?.length || 0;
+    const confClr = grp.confType === 'indoor' ? 'var(--in)' : 'var(--out)';
+    return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;flex:1;min-width:150px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-family:'Anton',sans-serif;font-size:15px;color:${confClr}">Group ${g}</span>
+        <span class="badge ${grp.confType==='indoor'?'b-in':'b-out'}">${grp.confType}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">
+        <b style="color:var(--text)">${grp.size} teams</b> · ${currentPairs} assigned<br>
+        ${grp.courts.join(', ')}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-family:'Anton',sans-serif;font-size:22px;color:var(--gold)">${scenario.name}</div>
+      <div style="font-size:12px;color:var(--muted)">
+        <b style="color:var(--text)">${activePlayers}</b> active players ·
+        <b style="color:var(--text)">${activePairCount}</b> teams ·
+        <b style="color:var(--text)">${scenario.groupOrder.length}</b> groups
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${groupsHtml}</div>
+    ${warning}
+  `;
 }
 
-function switchStructure(newStructure) {
-  if (STATE.structure === newStructure) return;
-  if (!confirm(`Switch to ${newStructure === '2groups' ? '2 Groups' : '4 Groups'}? This clears all scores and team names, and rebuilds groups.`)) return;
-  STATE.structure = newStructure;
-  STATE.pairs = buildPairs(STATE.players);
-  STATE.groups = assignGroups(STATE.pairs, STATE.players, STATE.structure);
-  STATE.scores = {};
-  STATE.teamNames = {};
-  feedLog = [];
-  saveState();
-  renderAll();
-  showToast(`Switched to ${newStructure === '2groups' ? '2 Groups' : '4 Groups'} structure`);
-}
+// Keep these as no-ops to avoid breaking legacy calls
+function renderStructureToggle() { /* no-op, obsolete */ }
+function switchStructure() { /* no-op, obsolete */ }
 
 // ══════════════════════════════════════════════════════════════
 // ADMIN: PAIRS
@@ -1625,18 +1778,18 @@ function switchStructure(newStructure) {
 function renderAdminPairs() {
   const el = document.getElementById('admin-pairs');
   const activeNames = STATE.players.filter(p => p.active).map(p => p.name);
-  const gKeys = groupKeys();
-  const lockedDefaultGroup = STATE.structure === '2groups' ? 'I' : 'A';
+  const scenario = getScenario();
+  const gKeys = scenario.groupOrder;
   el.innerHTML = STATE.pairs.map((pair, pi) => {
     const p1Options = activeNames.map(n => `<option value="${escapeHtml(n)}" ${n===pair.p1?'selected':''}>${escapeHtml(n)}</option>`).join('');
     const p2Options = activeNames.map(n => `<option value="${escapeHtml(n)}" ${n===pair.p2?'selected':''}>${escapeHtml(n)}</option>`).join('') + `<option value="(solo)" ${pair.p2==='(solo)'?'selected':''}>(solo)</option>`;
-    const groupOptions = gKeys.map(g => `<option value="${g}" ${pair.group===g?'selected':''}>${groupDisplayName(g)}</option>`).join('');
+    const groupOptions = gKeys.map(g => `<option value="${g}" ${pair.group===g?'selected':''}>Group ${g} (${scenario.groups[g].size} teams)</option>`).join('');
     if (pair.locked) {
       return `<div class="admin-pair-row">
         <div style="font-size:11px;color:var(--muted);width:20px;text-align:right">${pi+1}</div>
         <div style="flex:1;font-weight:600;font-size:13px">${escapeHtml(pair.p1)} / ${escapeHtml(pair.p2)}</div>
         <span class="locked-badge">🔒 Fixed</span>
-        <select class="admin-pair-group" disabled><option>${groupDisplayName(lockedDefaultGroup)}</option></select>
+        <select class="admin-pair-group" disabled><option>Group A</option></select>
         <div class="skill-pill">avg ${pairAvg(pair)}</div>
       </div>`;
     }
@@ -1659,8 +1812,10 @@ function saveAdminPairs() {
     if (!pair || pair.locked) return;
     pair[field] = sel.value;
   });
-  // Rebuild groups from pair.group using correct keys for current structure
-  const emptyGroups = STATE.structure === '2groups' ? {I:[], O:[]} : {A:[], B:[], C:[], D:[]};
+  // Rebuild groups from pair.group using scenario keys
+  const scenario = getScenario();
+  const emptyGroups = {};
+  scenario.groupOrder.forEach(g => { emptyGroups[g] = []; });
   STATE.groups = emptyGroups;
   STATE.pairs.forEach(pair => {
     if (pair.group && STATE.groups[pair.group]) STATE.groups[pair.group].push(pair.id);
@@ -1675,11 +1830,12 @@ function saveAdminPairs() {
 // ══════════════════════════════════════════════════════════════
 function resetScores() {
   if (!confirm('Reset all scores on all devices? This cannot be undone.')) return;
+  // Clear everything including knockouts (QFs, SFs, Final, 3rd-place)
   STATE.scores = {};
   feedLog = [];
   saveState();
   renderAll();
-  showToast('Scores reset');
+  showToast('All scores reset');
 }
 function resetNames() {
   if (!confirm('Reset all team names on all devices?')) return;
@@ -1712,7 +1868,7 @@ function goto(page) {
   if (page === 'schedule') renderSchedule();
   if (page === 'bracket') { renderGroups(); syncBracket(); }
   if (page === 'names') renderNames();
-  if (page === 'admin') { renderStructureToggle(); renderAdminPlayers(); renderAdminPairs(); }
+  if (page === 'admin') { renderScenarioInfo(); renderAdminPlayers(); renderAdminPairs(); }
 }
 
 function renderAll() {
@@ -1721,7 +1877,7 @@ function renderAll() {
   renderSchedule();
   syncBracket();
   renderNames();
-  if (adminUnlocked) { renderStructureToggle(); renderAdminPlayers(); renderAdminPairs(); }
+  if (adminUnlocked) { renderScenarioInfo(); renderAdminPlayers(); renderAdminPairs(); }
 }
 
 // ══════════════════════════════════════════════════════════════
