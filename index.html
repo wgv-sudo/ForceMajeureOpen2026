@@ -348,7 +348,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 // CONFIG
 // ══════════════════════════════════════════════════════════════
 const ADMIN_PIN = '2026';
-const SLOT_TIMES = ['16:00–16:15', '16:20–16:35', '16:40–16:55'];
+const SLOT_TIMES = ['16:10–16:25', '16:30–16:45', '16:50–17:05'];
 const STORAGE_KEY = 'fm_open_2026_state_v4';
 const FEED_KEY = 'fm_open_2026_feed_v4';
 
@@ -1226,30 +1226,30 @@ function renderSchedule() {
 
   html += `<div class="hour-banner">
     <div class="hour-big" style="color:var(--muted)">BREAK</div>
-    <div class="hour-desc">16:55–17:05 · 10 min · transition outdoor → indoor</div>
+    <div class="hour-desc">17:05–17:15 · 10 min · transition outdoor → indoor</div>
     <hr class="divline">
   </div>
   <div class="free-slot" style="background:var(--s2)">☕ <span><b>10-minute break</b> — outdoor teams move to indoor courts. Players who didn't qualify can play freely on outdoor courts and Indoor Field 3 throughout the knockouts.</span></div>
 
   <div class="hour-banner" style="margin-top:24px">
     <div class="hour-big" style="color:var(--kno)">SEMI-FINALS</div>
-    <div class="hour-desc">17:05–17:25 · 20 min hard stop · best of 3 · indoor only</div>
+    <div class="hour-desc">17:15–17:35 · 20 min hard stop · best of 3 · indoor only</div>
     <hr class="divline">
   </div>
   ${tiebreakerNotice}
   <div class="matches-grid">
-    ${renderKnockoutCard('SF1', 'In 1', '17:05–17:25', sf.sf1Home, sf.sf1Away, 'SF1')}
-    ${renderKnockoutCard('SF2', 'In 2', '17:05–17:25', sf.sf2Home, sf.sf2Away, 'SF2')}
+    ${renderKnockoutCard('SF1', 'In 1', '17:15–17:35', sf.sf1Home, sf.sf1Away, 'SF1')}
+    ${renderKnockoutCard('SF2', 'In 2', '17:15–17:35', sf.sf2Home, sf.sf2Away, 'SF2')}
   </div>
 
   <div class="hour-banner" style="margin-top:24px">
     <div class="hour-big" style="color:var(--kno)">FINAL &amp; BRONZE</div>
-    <div class="hour-desc">17:30–17:55 · 25 min hard stop · best of 5 · indoor only</div>
+    <div class="hour-desc">17:40–18:00 · 20 min hard stop · best of 5 · indoor only</div>
     <hr class="divline">
   </div>
   <div class="matches-grid">
-    ${renderKnockoutCard('FINAL', 'In 1', '17:30–17:55', finalH, finalA, '🏆 FINAL', null, true)}
-    ${renderKnockoutCard('THIRD', 'In 2', '17:30–17:55', thirdH, thirdA, '🥉 Bronze')}
+    ${renderKnockoutCard('FINAL', 'In 1', '17:40–18:00', finalH, finalA, '🏆 FINAL', null, true)}
+    ${renderKnockoutCard('THIRD', 'In 2', '17:40–18:00', thirdH, thirdA, '🥉 Bronze')}
   </div>`;
 
   document.getElementById('schedule-content').innerHTML = html;
@@ -1552,19 +1552,19 @@ function renderBracket() {
     <div class="bracket-wrap">
       <div class="bracket bracket-wide">
         <div class="b-round">
-          <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">17:05–17:25 · BO3</span></div>
+          <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">17:15–17:35 · BO3</span></div>
           <div class="b-matches">
-            ${bracketMatchHtml('SF1', 'SF1', 'In 1', '17:05', sf.sf1Home, sf.sf1Away, slotRefLabel(sf1Pair?.home), slotRefLabel(sf1Pair?.away))}
-            ${bracketMatchHtml('SF2', 'SF2', 'In 2', '17:05', sf.sf2Home, sf.sf2Away, slotRefLabel(sf2Pair?.home), slotRefLabel(sf2Pair?.away))}
+            ${bracketMatchHtml('SF1', 'SF1', 'In 1', '17:15', sf.sf1Home, sf.sf1Away, slotRefLabel(sf1Pair?.home), slotRefLabel(sf1Pair?.away))}
+            ${bracketMatchHtml('SF2', 'SF2', 'In 2', '17:15', sf.sf2Home, sf.sf2Away, slotRefLabel(sf2Pair?.home), slotRefLabel(sf2Pair?.away))}
           </div>
         </div>
         <div class="b-conn">
           <svg width="20" height="200" viewBox="0 0 20 200" fill="none"><line x1="0" y1="100" x2="20" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/></svg>
         </div>
         <div class="b-round">
-          <div class="b-round-title">Final<br><span style="font-size:9px;color:var(--muted)">17:30–17:55 · BO5</span></div>
+          <div class="b-round-title">Final<br><span style="font-size:9px;color:var(--muted)">17:40–18:00 · BO5</span></div>
           <div class="b-matches">
-            ${bracketMatchHtml('FINAL', '🏆 FINAL', 'In 1', '17:30', getKnockoutWinner('SF1'), getKnockoutWinner('SF2'), 'SF1 Winner', 'SF2 Winner', true)}
+            ${bracketMatchHtml('FINAL', '🏆 FINAL', 'In 1', '17:40', getKnockoutWinner('SF1'), getKnockoutWinner('SF2'), 'SF1 Winner', 'SF2 Winner', true)}
           </div>
         </div>
       </div>
@@ -1580,7 +1580,7 @@ function renderBracket() {
     <hr class="divider">
     <div class="section-label">🥉 Bronze Medal Match</div>
     <div style="max-width:360px">
-      ${bracketMatchHtml('THIRD', 'Bronze', 'In 2', '17:30', getKnockoutLoser('SF1'), getKnockoutLoser('SF2'), 'SF1 Loser', 'SF2 Loser')}
+      ${bracketMatchHtml('THIRD', 'Bronze', 'In 2', '17:40', getKnockoutLoser('SF1'), getKnockoutLoser('SF2'), 'SF1 Loser', 'SF2 Loser')}
     </div>`;
 
   el.innerHTML = html;
