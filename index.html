@@ -236,10 +236,9 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 </header>
 
 <nav class="nav">
-  <button class="tab" data-page="groups">Groups</button>
+  <button class="tab active" data-page="groups">Groups</button>
   <button class="tab" data-page="schedule">Schedule</button>
   <button class="tab" data-page="bracket">Bracket</button>
-  <button class="tab" data-page="names">Team Names</button>
   <div id="sync-status" class="sync-status" title="Live sync status">
     <span class="sync-dot"></span>
     <span class="sync-label">Connecting…</span>
@@ -247,15 +246,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
   <button class="tab tab-admin" data-page="admin">⚙ Admin</button>
 </nav>
 
-<div id="page-live" class="page active">
-  <div class="page-title">Live Feed</div>
-  <div class="page-sub">Real-time tournament updates</div>
-  <div class="stats-row" id="live-stats"></div>
-  <div class="section-label">Recent Activity</div>
-  <div id="feed-list" class="feed-list"></div>
-</div>
-
-<div id="page-groups" class="page">
+<div id="page-groups" class="page active">
   <div class="page-title">Groups &amp; Standings</div>
   <div class="page-sub">Top pair from each group advances to the semi-finals</div>
   <div class="two-col" id="groups-layout"></div>
@@ -271,13 +262,6 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
   <div class="page-title">Bracket</div>
   <div class="page-sub">Quarter-Finals → Semi-Finals → Final</div>
   <div id="bracket-content"></div>
-</div>
-
-<div id="page-names" class="page">
-  <div class="page-title">Team Names</div>
-  <div class="page-sub">Each pair enters their team name here — it'll appear across the whole tournament</div>
-  <div class="note">📝 Type your team name in the field and click Save.</div>
-  <div id="names-list"></div>
 </div>
 
 <div id="page-admin" class="page">
@@ -786,13 +770,12 @@ function pairAvg(pair) {
   const s2 = pair.p2 === '(solo)' ? s1 : (getPlayer(pair.p2)?.skill ?? 1.5);
   return ((s1 + s2) / 2).toFixed(1);
 }
-function teamName(pairId) { return STATE.teamNames[pairId] || null; }
 function teamDisplay(pairId) {
   const pair = getPair(pairId);
   if (!pair) return {name:'Unknown', players:'', hasName:false};
   const players = pair.p2 === '(solo)' ? pair.p1 : `${pair.p1} & ${pair.p2}`;
-  const n = teamName(pairId);
-  return {name: n || 'Unnamed', players, hasName: !!n};
+  // Teams are always referred to by their players — no custom team names
+  return {name: players, players, hasName: true};
 }
 function getScheduleForGroup(g) {
   const size = getPairsForGroup(g).length;
@@ -1024,45 +1007,17 @@ function getMatchFormat(matchId) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// FEED
+// FEED — Live feed feature removed; no-op for backward compat
 // ══════════════════════════════════════════════════════════════
-function addFeed(icon, msg) {
-  const now = new Date();
-  const time = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  feedLog.push({icon, msg, time, ts: Date.now()});
-  if (feedLog.length > 50) feedLog = feedLog.slice(-50);
-}
+function addFeed(_icon, _msg) { /* no-op */ }
 
 // ══════════════════════════════════════════════════════════════
-// RENDER: LIVE
+// LIGHT-WEIGHT HERO UPDATE (Live page removed)
 // ══════════════════════════════════════════════════════════════
 function renderLive() {
-  const totalMatches = Object.keys(STATE.scores).filter(k => {
-    const sv = STATE.scores[k];
-    return sv.h !== '' && sv.a !== '' && !isNaN(parseInt(sv.h)) && !isNaN(parseInt(sv.a));
-  }).length;
-  const totalExpected = groupKeys().reduce((sum, g) => sum + getScheduleForGroup(g).length, 0);
-  const activePlayers = STATE.players.filter(p => p.active).length;
-
-  document.getElementById('live-stats').innerHTML = `
-    <div class="stat"><div class="stat-val" style="color:var(--in)">${activePlayers}</div><div class="stat-lbl">Players</div></div>
-    <div class="stat"><div class="stat-val">${STATE.pairs.length}</div><div class="stat-lbl">Pairs</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--win)">${totalMatches}</div><div class="stat-lbl">Played</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--out)">${Math.max(0, totalExpected-totalMatches)}</div><div class="stat-lbl">Remaining</div></div>
-  `;
-  document.getElementById('hero-pairs').textContent = STATE.pairs.length;
-
-  const el = document.getElementById('feed-list');
-  if (feedLog.length === 0) {
-    el.innerHTML = '<div class="feed-empty">No scores yet — the tournament hasn\'t started! 🎾</div>';
-    return;
-  }
-  el.innerHTML = [...feedLog].reverse().slice(0, 20).map(item => `
-    <div class="feed-item">
-      <div class="feed-icon">${item.icon}</div>
-      <div class="feed-text">${item.msg}</div>
-      <div class="feed-time">${item.time}</div>
-    </div>`).join('');
+  // Update only the hero-pairs counter; the full Live page no longer exists
+  const heroPairs = document.getElementById('hero-pairs');
+  if (heroPairs) heroPairs.textContent = STATE.pairs.length;
 }
 
 // ══════════════════════════════════════════════════════════════
