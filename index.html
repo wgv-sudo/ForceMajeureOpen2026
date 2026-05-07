@@ -842,7 +842,7 @@ function computeStandings(g) {
 // Winners advance to SFs; among 3 QF losers, the one with highest
 // Combined margin for a stats entry — sum of per-match margins,
 // where each match contributes (sets won) - (sets lost).
-// In BO3 this gives 2-0 = +2, 2-1 = +1, 1-2 = -1, 0-2 = -2.
+// In BO5 this gives 3-0 = +3, 3-1 = +2, 3-2 = +1, 2-3 = -1, 1-3 = -2, 0-3 = -3.
 // Equivalent to gf - ga since each set is 1 point.
 function pairMargin(statsEntry) {
   return (statsEntry.gf || 0) - (statsEntry.ga || 0);
@@ -992,14 +992,14 @@ function getKnockoutLoser(matchId) {
 const KNOCKOUT_KEYS = ['SF1','SF2','FINAL','THIRD'];
 
 // Match formats — controls score input validation and match length
-// BO3: first to 5 sets (max score is 5-0, 5-4, 5-3, 5-2, 5-1, 5-0)
-// BO5: first to 5 sets (max score is 5-0, 5-4, 5-3, 5-2, 5-1, 5-0)
+// Match formats — controls score input validation and match length
+// All matches: BO5 (first to 3 sets). Valid scores: 3-0, 3-1, 3-2, 0-3, 1-3, 2-3.
 const MATCH_FORMATS = {
-  group: { sets: 'BO3', winningScore: 5 },
-  SF1:   { sets: 'BO3', winningScore: 5 },
-  SF2:   { sets: 'BO3', winningScore: 5 },
-  FINAL: { sets: 'BO5', winningScore: 5 },
-  THIRD: { sets: 'BO5', winningScore: 5 },
+  group: { sets: 'BO5', winningScore: 3 },
+  SF1:   { sets: 'BO5', winningScore: 3 },
+  SF2:   { sets: 'BO5', winningScore: 3 },
+  FINAL: { sets: 'BO5', winningScore: 3 },
+  THIRD: { sets: 'BO5', winningScore: 3 },
 };
 function getMatchFormat(matchId) {
   return MATCH_FORMATS[matchId] || MATCH_FORMATS.group;
@@ -1087,7 +1087,7 @@ function renderSchedule() {
   const totalGroupMatches = groupKeys().reduce((sum, g) => sum + getScheduleForGroup(g).length, 0);
   let html = `<div class="hour-banner">
     <div class="hour-big" style="color:var(--in)">GROUP STAGE</div>
-    <div class="hour-desc">${scenario.name} · 16:00–16:55 · 3 slots × 15 min · ${totalGroupMatches} matches · best of 3, full round-robin</div>
+    <div class="hour-desc">${scenario.name} · 16:00–16:55 · 3 slots × 15 min · ${totalGroupMatches} matches · best of 5, full round-robin</div>
     <hr class="divline">
   </div>`;
 
@@ -1186,7 +1186,7 @@ function renderSchedule() {
 
   <div class="hour-banner" style="margin-top:24px">
     <div class="hour-big" style="color:var(--kno)">SEMI-FINALS</div>
-    <div class="hour-desc">17:15–17:35 · 20 min hard stop · best of 3 · indoor only</div>
+    <div class="hour-desc">17:15–17:35 · 20 min hard stop · best of 5 · indoor only</div>
     <hr class="divline">
   </div>
   ${tiebreakerNotice}
@@ -1309,17 +1309,17 @@ function submitScore(g, idx, homeId, awayId) {
     return;
   }
   const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
-  // Group matches are BO3: first to 2 sets. Valid finals: 2-0, 2-1, 0-2, 1-2.
-  if (isNaN(h) || isNaN(a) || h < 0 || a < 0 || h > 2 || a > 2) {
-    showToast('Sets must be 0–2 (best of 3)');
+  // All matches are BO5: first to 3 sets. Valid finals: 3-0, 3-1, 3-2, 0-3, 1-3, 2-3.
+  if (isNaN(h) || isNaN(a) || h < 0 || a < 0 || h > 3 || a > 3) {
+    showToast('Sets must be 0–3 (best of 5)');
     return;
   }
-  if (h !== 2 && a !== 2) {
-    showToast('One team must win 2 sets');
+  if (h !== 3 && a !== 3) {
+    showToast('One team must win 3 sets');
     return;
   }
-  if (h === 2 && a === 2) {
-    showToast('Only one team can reach 2 sets');
+  if (h === 3 && a === 3) {
+    showToast('Only one team can reach 3 sets');
     return;
   }
 
@@ -1383,7 +1383,7 @@ function submitKnockoutScore(matchId) {
   if (hVal === '' || aVal === '') { showToast('Please enter both scores'); return; }
   const h = parseInt(hVal, 10), a = parseInt(aVal, 10);
   const fmt = getMatchFormat(matchId);
-  const winScore = fmt.winningScore; // 2 for BO3, 3 for BO5
+  const winScore = fmt.winningScore; // 3 for BO5 (first to 3 sets)
   if (isNaN(h) || isNaN(a) || h < 0 || a < 0 || h > winScore || a > winScore) {
     showToast(`Sets must be 0–${winScore} (${fmt.sets})`);
     return;
@@ -1505,7 +1505,7 @@ function renderBracket() {
     <div class="bracket-wrap">
       <div class="bracket bracket-wide">
         <div class="b-round">
-          <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">17:15–17:35 · BO3</span></div>
+          <div class="b-round-title">Semi-Finals<br><span style="font-size:9px;color:var(--muted)">17:15–17:35 · BO5</span></div>
           <div class="b-matches">
             ${bracketMatchHtml('SF1', 'SF1', 'In 1', '17:15', sf.sf1Home, sf.sf1Away, slotRefLabel(sf1Pair?.home), slotRefLabel(sf1Pair?.away))}
             ${bracketMatchHtml('SF2', 'SF2', 'In 2', '17:15', sf.sf2Home, sf.sf2Away, slotRefLabel(sf2Pair?.home), slotRefLabel(sf2Pair?.away))}
