@@ -992,14 +992,14 @@ function getKnockoutLoser(matchId) {
 const KNOCKOUT_KEYS = ['SF1','SF2','FINAL','THIRD'];
 
 // Match formats — controls score input validation and match length
-// BO3: first to 2 sets (max score is 2-0, 2-1)
-// BO5: first to 3 sets (max score is 3-0, 3-1, 3-2)
+// BO3: first to 5 sets (max score is 5-0, 5-4, 5-3, 5-2, 5-1, 5-0)
+// BO5: first to 5 sets (max score is 5-0, 5-4, 5-3, 5-2, 5-1, 5-0)
 const MATCH_FORMATS = {
-  group: { sets: 'BO3', winningScore: 2 },
-  SF1:   { sets: 'BO3', winningScore: 2 },
-  SF2:   { sets: 'BO3', winningScore: 2 },
-  FINAL: { sets: 'BO5', winningScore: 3 },
-  THIRD: { sets: 'BO5', winningScore: 3 },
+  group: { sets: 'BO3', winningScore: 5 },
+  SF1:   { sets: 'BO3', winningScore: 5 },
+  SF2:   { sets: 'BO3', winningScore: 5 },
+  FINAL: { sets: 'BO5', winningScore: 5 },
+  THIRD: { sets: 'BO5', winningScore: 5 },
 };
 function getMatchFormat(matchId) {
   return MATCH_FORMATS[matchId] || MATCH_FORMATS.group;
